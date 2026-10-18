@@ -14,6 +14,7 @@ import (
 	"slices"
 	"sort"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -48,6 +49,10 @@ type App struct {
 
 	catalog atomic.Pointer[Catalog]
 	latest  atomic.Pointer[string]
+
+	latestMu   sync.Mutex // сверка /latest с GitHub: одна за раз
+	latestAt   time.Time  // последняя сверка (и неудачная)
+	latestETag string     // ETag последнего ответа GitHub: условный запрос
 }
 
 func (a *App) Catalog() *Catalog { return a.catalog.Load() }
@@ -347,12 +352,12 @@ func notFound(w http.ResponseWriter, lang Lang) {
 }
 
 func (a *App) latestTag(w http.ResponseWriter, r *http.Request) {
-	tag := a.Latest()
+	tag := a.LatestFresh(r.Context())
 	if tag == "" {
 		text(w, http.StatusServiceUnavailable, "latest version is not known yet\n")
 		return
 	}
-	w.Header().Set("Cache-Control", "public, max-age=300")
+	w.Header().Set("Cache-Control", "public, max-age=60")
 	text(w, http.StatusOK, tag+"\n")
 }
 

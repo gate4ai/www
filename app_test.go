@@ -49,6 +49,7 @@ func testApp(t *testing.T, withCatalog bool) *App {
 		Sources:       NewSources("http://127.0.0.1:9/index.json", []string{DefaultRegistryKey}, DefaultReleasesRepo),
 		WebhookSecret: "s3cret",
 	}
+	a.Sources.GitHubAPI = "http://127.0.0.1:9" // без сети: сверка /latest не удаётся, значение остаётся
 	if withCatalog {
 		a.catalog.Store(testCatalog(t))
 	}
@@ -381,6 +382,40 @@ func TestRefreshKeepsLastVerified(t *testing.T) {
 	a.Sources.ReleasesRepo = "gate4ai/none"
 	if err := a.RefreshLatest(context.Background()); err == nil || a.Latest() != "v0.7.0" {
 		t.Fatal("failed refresh replaced /latest")
+	}
+}
+
+// GET /latest сверяется с GitHub не чаще latestFresh, условным запросом (ETag).
+func TestLatestOnRequest(t *testing.T) {
+	tag, hits, conditional := "v0.7.0", 0, 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hits++
+		etag := `"` + tag + `"`
+		if r.Header.Get("If-None-Match") == etag {
+			conditional++
+			w.WriteHeader(http.StatusNotModified)
+			return
+		}
+		w.Header().Set("ETag", etag)
+		_, _ = io.WriteString(w, `{"tag_name":"`+tag+`"}`)
+	}))
+	defer srv.Close()
+	a := testApp(t, false)
+	a.Sources.GitHubAPI = srv.URL
+	if r := get(a, "/latest"); r.body != "v0.7.0\n" || hits != 1 {
+		t.Fatal(r.body, hits)
+	}
+	tag = "v0.7.1"
+	if r := get(a, "/latest"); r.body != "v0.7.0\n" || hits != 1 {
+		t.Fatal("checked GitHub again within latestFresh:", r.body, hits)
+	}
+	a.latestAt = a.latestAt.Add(-latestFresh)
+	if r := get(a, "/latest"); r.body != "v0.7.1\n" || hits != 2 {
+		t.Fatal("new release not seen after latestFresh:", r.body, hits)
+	}
+	a.latestAt = a.latestAt.Add(-latestFresh)
+	if r := get(a, "/latest"); r.body != "v0.7.1\n" || hits != 3 || conditional != 1 {
+		t.Fatal("same release: 304 keeps the tag", r.body, hits, conditional)
 	}
 }
 
