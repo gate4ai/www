@@ -1,0 +1,83 @@
+name: installers
+
+# Real installs from GitHub Releases on clean runners. Runs only when the
+# installers change (macOS minutes are expensive in a private repository).
+on:
+  push:
+    branches: [main]
+    paths: [install/**, .github/workflows/install.yml]
+  pull_request:
+    paths: [install/**, .github/workflows/install.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  unix:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fake site serving /latest
+        run: |
+          mkdir -p site && gh release view -R gate4ai/gate4ai --json tagName -q .tagName > site/latest
+          cat site/latest
+          (cd site && python3 -m http.server 8000 >/dev/null 2>&1 &)
+          sleep 1
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - name: Install latest (version from the site)
+        run: |
+          GATE4AI_SITE=http://127.0.0.1:8000 GATE4AI_INSTALL_DIR="$RUNNER_TEMP/bin" sh install/install.sh
+          "$RUNNER_TEMP/bin/gate4ai" --version
+          test -x "$RUNNER_TEMP/bin/gate4ai-tray"
+      - name: Site unavailable, fallback to GitHub API; no tray; re-run updates
+        run: |
+          GATE4AI_SITE=http://127.0.0.1:1 GATE4AI_NO_TRAY=1 GATE4AI_INSTALL_DIR="$RUNNER_TEMP/bin2" sh install/install.sh
+          "$RUNNER_TEMP/bin2/gate4ai" --version
+          test ! -e "$RUNNER_TEMP/bin2/gate4ai-tray"
+          GATE4AI_SITE=http://127.0.0.1:1 GATE4AI_NO_TRAY=1 GATE4AI_INSTALL_DIR="$RUNNER_TEMP/bin2" sh install/install.sh
+      - name: Pinned version via curl | sh
+        run: cat install/install.sh | GATE4AI_VERSION=v0.1.1 GATE4AI_NO_TRAY=1 GATE4AI_INSTALL_DIR="$RUNNER_TEMP/bin3" sh
+      - name: Tampered archive is not installed
+        run: |
+          tag=$(cat site/latest); ver=${tag#v}
+          case "$(uname -s)-$(uname -m)" in
+            Linux-x86_64) p=linux_amd64 ;; Linux-aarch64) p=linux_arm64 ;; Darwin-arm64) p=darwin_arm64 ;; *) p=darwin_amd64 ;;
+          esac
+          mkdir -p mirror/$tag
+          gh release download "$tag" -R gate4ai/gate4ai -p checksums.txt -D mirror/$tag
+          printf 'not gate4ai' > mirror/$tag/gate4ai_${ver}_${p}.tar.gz
+          (cd mirror && python3 -m http.server 8001 >/dev/null 2>&1 &)
+          sleep 1
+          if GATE4AI_DOWNLOAD_BASE=http://127.0.0.1:8001 GATE4AI_VERSION=$tag GATE4AI_NO_TRAY=1 \
+             GATE4AI_INSTALL_DIR="$RUNNER_TEMP/bad" sh install/install.sh; then
+            echo "installer accepted a tampered archive"; exit 1
+          fi
+          test ! -e "$RUNNER_TEMP/bad/gate4ai"
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Windows PowerShell 5.1 (site unavailable, fallback to GitHub API)
+        shell: powershell
+        run: |
+          $env:GATE4AI_SITE = 'http://127.0.0.1:1'
+          $env:GATE4AI_INSTALL_DIR = Join-Path $env:RUNNER_TEMP 'g4'
+          Get-Content -Raw install/install.ps1 | Invoke-Expression
+          & (Join-Path $env:GATE4AI_INSTALL_DIR 'gate4ai.exe') --version
+          if (-not (Test-Path (Join-Path $env:GATE4AI_INSTALL_DIR 'gate4ai-tray.exe'))) { throw 'tray missing' }
+      - name: PowerShell 7, re-run updates in place
+        shell: pwsh
+        run: |
+          $env:GATE4AI_SITE = 'http://127.0.0.1:1'
+          $env:GATE4AI_INSTALL_DIR = Join-Path $env:RUNNER_TEMP 'g4'
+          Get-Content -Raw install/install.ps1 | Invoke-Expression
+          & (Join-Path $env:GATE4AI_INSTALL_DIR 'gate4ai.exe') --version

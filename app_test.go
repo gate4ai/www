@@ -1,0 +1,406 @@
+// Маршруты сайта: ответы, языки, ОС, каталог, webhook, обновление источников.
+
+package main
+
+import (
+	"context"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"strings"
+	"testing"
+)
+
+func testdata(t *testing.T) ([]byte, string) {
+	t.Helper()
+	raw, err := os.ReadFile("testdata/index.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	sig, err := os.ReadFile("testdata/index.json.sig")
+	if err != nil {
+		t.Fatal(err)
+	}
+	return raw, string(sig)
+}
+
+func testCatalog(t *testing.T) *Catalog {
+	t.Helper()
+	raw, sig := testdata(t)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, ".sig") {
+			_, _ = io.WriteString(w, sig)
+			return
+		}
+		_, _ = w.Write(raw)
+	}))
+	defer srv.Close()
+	c, err := NewSources(srv.URL+"/index.json", []string{DefaultRegistryKey}, DefaultReleasesRepo).FetchCatalog(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	return c
+}
+
+func testApp(t *testing.T, withCatalog bool) *App {
+	t.Helper()
+	a := &App{
+		Sources:       NewSources("http://127.0.0.1:9/index.json", []string{DefaultRegistryKey}, DefaultReleasesRepo),
+		WebhookSecret: "s3cret",
+	}
+	if withCatalog {
+		a.catalog.Store(testCatalog(t))
+	}
+	tag := "v0.1.1"
+	a.latest.Store(&tag)
+	return a
+}
+
+type resp struct {
+	status int
+	h      http.Header
+	body   string
+}
+
+func do(a *App, method, uri string, headers ...string) resp {
+	req := httptest.NewRequest(method, uri, nil)
+	for i := 0; i+1 < len(headers); i += 2 {
+		if strings.EqualFold(headers[i], "host") {
+			req.Host = headers[i+1]
+			continue
+		}
+		req.Header.Set(headers[i], headers[i+1])
+	}
+	w := httptest.NewRecorder()
+	a.Handler().ServeHTTP(w, req)
+	return resp{w.Code, w.Header(), w.Body.String()}
+}
+
+func get(a *App, uri string, headers ...string) resp { return do(a, http.MethodGet, uri, headers...) }
+
+func TestHomePages(t *testing.T) {
+	a := testApp(t, true)
+	r := get(a, "/")
+	if r.status != http.StatusOK {
+		t.Fatal(r.status)
+	}
+	if !strings.Contains(r.h.Get("Content-Security-Policy"), "script-src 'self'") ||
+		r.h.Get("X-Content-Type-Options") != "nosniff" || r.h.Get("Referrer-Policy") != "no-referrer" {
+		t.Fatalf("security headers: %v", r.h)
+	}
+	if r.h.Get("Content-Type") != "text/html; charset=utf-8" {
+		t.Fatal(r.h.Get("Content-Type"))
+	}
+	for _, want := range []string{"only</em> what you allow", "curl -fsSL https://gate4.ai/install.sh | sh",
+		"/connectors/email", "v0.1.1", `<html lang="en">`, `href="/ru/"`} {
+		if !strings.Contains(r.body, want) {
+			t.Errorf("home: no %q", want)
+		}
+	}
+	if strings.Count(r.body, `class="card"`) != 3 {
+		t.Error("three connector cards on the landing")
+	}
+	r = get(a, "/ru/")
+	if r.status != http.StatusOK || !strings.Contains(r.body, `lang="ru"`) || !strings.Contains(r.body, "только</em> то, что вы разрешили") ||
+		!strings.Contains(r.body, `href="/?lang=en"`) {
+		t.Fatalf("ru home: %d", r.status)
+	}
+	if r := get(a, "/ru"); r.status != http.StatusPermanentRedirect || r.h.Get("Location") != "/ru/" {
+		t.Fatalf("/ru: %d %v", r.status, r.h)
+	}
+	// Без каталога главная открывается без карточек.
+	if r := get(testApp(t, false), "/"); r.status != http.StatusOK || strings.Contains(r.body, `id="connectors"`) {
+		t.Fatal("home without catalog")
+	}
+}
+
+func TestPageBudget(t *testing.T) {
+	a := testApp(t, true)
+	assets := len(get(a, "/static/site.css").body) + len(get(a, "/static/site.js").body)
+	for _, p := range []string{"/?lang=en", "/ru/", "/install", "/ru/install", "/connectors", "/connectors/email", "/ru/connectors/browser"} {
+		r := get(a, p)
+		if r.status != http.StatusOK {
+			t.Fatalf("%s: %d", p, r.status)
+		}
+		if total := len(r.body) + assets; total >= 100_000 {
+			t.Errorf("%s: %d bytes with CSS and JS, budget is 100 KB", p, total)
+		}
+		// Без сторонних скриптов, шрифтов и стилей.
+		if strings.Contains(r.body, `src="http`) || strings.Contains(r.body, `<link rel="stylesheet" href="http`) {
+			t.Errorf("%s: third-party resource", p)
+		}
+	}
+}
+
+func TestLanguageByAcceptLanguage(t *testing.T) {
+	a := testApp(t, true)
+	r := get(a, "/", "Accept-Language", "ru-RU,ru;q=0.9,en;q=0.5")
+	if r.status != http.StatusTemporaryRedirect || r.h.Get("Location") != "/ru/" {
+		t.Fatalf("%d %v", r.status, r.h)
+	}
+	if r.h.Get("Vary") != "Accept-Language, User-Agent" {
+		t.Fatal(r.h.Get("Vary"))
+	}
+	// Переключатель языка на английский не перенаправляет обратно.
+	if r := get(a, "/?lang=en", "Accept-Language", "ru"); r.status != http.StatusOK {
+		t.Fatal(r.status)
+	}
+	if r := get(a, "/", "Accept-Language", "en-US,en;q=0.9,ru;q=0.8"); r.status != http.StatusOK {
+		t.Fatal(r.status)
+	}
+}
+
+func windowsPanel(t *testing.T, body string) string {
+	t.Helper()
+	i := strings.Index(body, `data-os-panel="windows"`)
+	if i < 0 {
+		t.Fatal("no windows panel")
+	}
+	return body[i : i+40]
+}
+
+func TestInstallCommandByOS(t *testing.T) {
+	a := testApp(t, true)
+	win := []string{"User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+	r := get(a, "/install", win...)
+	if strings.Contains(windowsPanel(t, r.body), "hidden") {
+		t.Error("windows command hidden for a Windows visitor")
+	}
+	if r.h.Get("Vary") != "User-Agent" || !strings.Contains(r.body, "releases/tag/v0.1.1") {
+		t.Error("vary or latest release")
+	}
+	r = get(a, "/install?os=linux", win...)
+	if !strings.Contains(windowsPanel(t, r.body), "hidden") {
+		t.Error("query overrides user agent")
+	}
+	r = get(a, "/ru/install", "User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5)")
+	if !strings.Contains(windowsPanel(t, r.body), "hidden") || !strings.Contains(r.body, "Установка gate4.ai") {
+		t.Error("ru install for macOS")
+	}
+}
+
+func TestScriptsAndLatest(t *testing.T) {
+	a := testApp(t, true)
+	r := get(a, "/install.sh")
+	if r.status != http.StatusOK || r.h.Get("Content-Type") != "text/plain; charset=utf-8" ||
+		!strings.Contains(r.h.Get("Cache-Control"), "max-age=300") {
+		t.Fatalf("install.sh: %d %v", r.status, r.h)
+	}
+	if !strings.HasSuffix(strings.TrimRight(r.body, "\n"), `main "$@"`) {
+		t.Error("install.sh: the last line calls main")
+	}
+	r = get(a, "/install.ps1")
+	if r.status != http.StatusOK || !strings.HasSuffix(strings.TrimRight(r.body, "\r\n"), "Install-Gate4ai") {
+		t.Error("install.ps1")
+	}
+	r = get(a, "/latest")
+	if r.status != http.StatusOK || r.body != "v0.1.1\n" || r.h.Get("Content-Type") != "text/plain; charset=utf-8" {
+		t.Fatalf("latest: %d %q", r.status, r.body)
+	}
+	a.latest.Store(nil)
+	if r := get(a, "/latest"); r.status != http.StatusServiceUnavailable {
+		t.Fatal(r.status)
+	}
+}
+
+func TestCatalogPages(t *testing.T) {
+	a := testApp(t, true)
+	r := get(a, "/connectors")
+	if r.status != http.StatusOK {
+		t.Fatal(r.status)
+	}
+	for _, name := range []string{"browser", "email", "files"} {
+		if !strings.Contains(r.body, "/connectors/"+name+`"`) {
+			t.Error(name)
+		}
+	}
+	if !strings.Contains(r.body, "3 connectors from the signed registry") {
+		t.Error("count")
+	}
+	r = get(a, "/connectors?q=imap")
+	if !strings.Contains(r.body, `/connectors/email"`) || strings.Contains(r.body, `/connectors/files"`) {
+		t.Error("search")
+	}
+	if !strings.Contains(r.body, `href="/connectors?trust=verified&amp;q=imap"`) {
+		t.Error("filters keep the query")
+	}
+	r = get(a, "/connectors?trust=community")
+	if strings.Contains(r.body, `/connectors/email"`) || !strings.Contains(r.body, "Nothing found") {
+		t.Error("trust filter")
+	}
+	if r := get(a, "/connectors?trust=bogus"); !strings.Contains(r.body, `/connectors/email"`) {
+		t.Error("unknown trust level is ignored")
+	}
+
+	r = get(a, "/ru/connectors/email")
+	if r.status != http.StatusOK {
+		t.Fatal(r.status)
+	}
+	for _, want := range []string{"gate4ai connectors install email", "Соединяется по TLS только с imap.host:imap.port",
+		"network tls://${setting:imap.host}", "<title>email: Коннекторы</title>", "Проверен"} {
+		if !strings.Contains(r.body, want) {
+			t.Errorf("connector page: no %q", want)
+		}
+	}
+	if !strings.Contains(r.body, `<span class="mono">v3</span>`) || strings.Index(r.body, "v3</span>") > strings.Index(r.body, "v2</span>") {
+		t.Error("versions, newest first")
+	}
+
+	if r := get(a, "/connectors/nope"); r.status != http.StatusNotFound {
+		t.Fatal(r.status)
+	}
+	raw, _ := testdata(t)
+	r = get(a, "/connectors.json")
+	if r.status != http.StatusOK || r.body != string(raw) || r.h.Get("Content-Type") != "application/json" {
+		t.Fatal("connectors.json")
+	}
+
+	empty := testApp(t, false)
+	if r := get(empty, "/connectors"); r.status != http.StatusOK || !strings.Contains(r.body, "signed registry") {
+		t.Fatal("catalog not loaded")
+	}
+	if r := get(empty, "/connectors.json"); r.status != http.StatusServiceUnavailable {
+		t.Fatal(r.status)
+	}
+	if r := get(empty, "/connectors/email"); r.status != http.StatusNotFound {
+		t.Fatal(r.status)
+	}
+}
+
+func TestRevokedVersion(t *testing.T) {
+	a := testApp(t, true)
+	c := a.Catalog()
+	c.Index.Revoked = append(c.Index.Revoked, revocation("email", "3", "leaks data"))
+	r := get(a, "/connectors/email")
+	if !strings.Contains(r.body, `class="is-revoked"`) || !strings.Contains(r.body, "leaks data") {
+		t.Error("revoked version with its reason")
+	}
+	i := strings.Index(r.body, "v2</span>")
+	if i < 0 || !strings.Contains(r.body[i:i+80], "pill-allow") {
+		t.Error("v2 is the latest when v3 is revoked")
+	}
+}
+
+func TestHTMLIsEscaped(t *testing.T) {
+	r := get(testApp(t, true), "/connectors?q=%3Cscript%3Ealert(1)%3C/script%3E")
+	if strings.Contains(r.body, "<script>alert(1)") {
+		t.Fatal("not escaped")
+	}
+}
+
+func TestMiscRoutes(t *testing.T) {
+	a := testApp(t, true)
+	if r := get(a, "/healthz"); r.status != http.StatusOK || r.body != "ok" {
+		t.Fatal(r)
+	}
+	if r := get(a, "/static/site.css"); r.status != http.StatusOK || r.h.Get("Content-Type") != "text/css; charset=utf-8" {
+		t.Fatal(r.status)
+	}
+	if r := get(a, "/static/site.js"); r.status != http.StatusOK || r.h.Get("Content-Type") != "text/javascript; charset=utf-8" {
+		t.Fatal(r.status)
+	}
+	if r := get(a, "/favicon.svg"); r.status != http.StatusOK || r.h.Get("Content-Type") != "image/svg+xml" {
+		t.Fatal(r.status)
+	}
+	if r := get(a, "/robots.txt"); !strings.Contains(r.body, "Sitemap: https://gate4.ai/sitemap.xml") {
+		t.Fatal(r.body)
+	}
+	r := get(a, "/sitemap.xml")
+	if r.status != http.StatusOK || !strings.Contains(r.body, "https://gate4.ai/ru/connectors/email") || !strings.Contains(r.body, "<loc>https://gate4.ai/ru/</loc>") {
+		t.Fatal(r.body)
+	}
+	r = get(a, "/ru/nothing")
+	if r.status != http.StatusNotFound || !strings.Contains(r.body, "Страница не найдена") {
+		t.Fatal(r.status)
+	}
+	if r := get(a, "/nothing"); r.status != http.StatusNotFound || !strings.Contains(r.body, "Page not found") {
+		t.Fatal(r.status)
+	}
+	if r := do(a, http.MethodHead, "/healthz"); r.status != http.StatusOK {
+		t.Fatal("HEAD", r.status)
+	}
+}
+
+func TestWebhook(t *testing.T) {
+	a := testApp(t, true)
+	if r := do(a, http.MethodPost, "/hooks/registry"); r.status != http.StatusUnauthorized {
+		t.Fatal(r.status)
+	}
+	if r := do(a, http.MethodPost, "/hooks/registry", "Authorization", "Bearer wrong"); r.status != http.StatusUnauthorized {
+		t.Fatal(r.status)
+	}
+	// Верный секрет, индекс недоступен (порт 9): ошибка шлюза, прежний каталог остаётся.
+	before := a.Catalog()
+	if r := do(a, http.MethodPost, "/hooks/registry", "Authorization", "Bearer s3cret"); r.status != http.StatusBadGateway {
+		t.Fatal(r.status)
+	}
+	if a.Catalog() != before {
+		t.Fatal("the last verified catalog is replaced")
+	}
+	a.WebhookSecret = ""
+	if r := do(a, http.MethodPost, "/hooks/registry", "Authorization", "Bearer "); r.status != http.StatusNotFound {
+		t.Fatal("webhook without a secret", r.status)
+	}
+}
+
+// Webhook и таймер: верный индекс заменяет каталог, подменённый — нет.
+func TestRefreshKeepsLastVerified(t *testing.T) {
+	raw, sig := testdata(t)
+	serve := raw
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/index.json.sig":
+			_, _ = io.WriteString(w, sig)
+		case "/index.json":
+			_, _ = w.Write(serve)
+		case "/repos/gate4ai/gate4ai/releases/latest":
+			_, _ = io.WriteString(w, `{"tag_name":"v0.7.0"}`)
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+	a := testApp(t, false)
+	a.Sources.RegistryURL = srv.URL + "/index.json"
+	a.Sources.GitHubAPI = srv.URL
+	if r := do(a, http.MethodPost, "/hooks/registry", "Authorization", "Bearer s3cret"); r.status != http.StatusOK || r.body != "refreshed\n" {
+		t.Fatal(r.status, r.body)
+	}
+	good := a.Catalog()
+	if good == nil || len(good.Index.Connectors) != 3 {
+		t.Fatal("catalog not loaded")
+	}
+	serve = []byte(strings.Replace(string(raw), "E", "X", 1))
+	if err := a.RefreshCatalog(context.Background()); err == nil || a.Catalog() != good {
+		t.Fatalf("tampered index accepted: %v", err)
+	}
+	if err := a.RefreshLatest(context.Background()); err != nil || a.Latest() != "v0.7.0" {
+		t.Fatal(err, a.Latest())
+	}
+	a.Sources.ReleasesRepo = "gate4ai/none"
+	if err := a.RefreshLatest(context.Background()); err == nil || a.Latest() != "v0.7.0" {
+		t.Fatal("failed refresh replaced /latest")
+	}
+}
+
+func TestCanonicalHostRedirect(t *testing.T) {
+	a := testApp(t, true)
+	a.CanonicalHost = "gate4.ai"
+	r := get(a, "/connectors?q=x", "Host", "www.gate4.ai")
+	if r.status != http.StatusPermanentRedirect || r.h.Get("Location") != "https://gate4.ai/connectors?q=x" {
+		t.Fatalf("%d %v", r.status, r.h)
+	}
+	if r.h.Get("Content-Security-Policy") == "" {
+		t.Error("security headers on the redirect")
+	}
+	if r := get(a, "/connectors", "Host", "gate4.ai"); r.status != http.StatusOK {
+		t.Fatal(r.status)
+	}
+	if r := get(a, "/connectors", "Host", "gate4.ai:443"); r.status != http.StatusOK {
+		t.Fatal("port", r.status)
+	}
+	if r := get(a, "/healthz", "Host", "127.0.0.1:8080"); r.status != http.StatusOK {
+		t.Fatal("healthz on any host", r.status)
+	}
+}

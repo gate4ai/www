@@ -1,0 +1,45 @@
+{{define "content"}}
+<section class="page-head">
+  <div class="wrap narrow-wrap">
+    <p><a class="link-back" href="{{.Page.P}}/connectors">{{.Page.T.ConnectorBack}}</a></p>
+    <h1 class="h1 mono">{{.Card.Name}}</h1>
+    <p class="lead">{{.Card.Description}}</p>
+    <dl class="facts">
+      <div><dt>{{.Page.T.ConnectorPublisher}}</dt><dd>{{.Card.Publisher}}</dd></div>
+      <div><dt>{{.Page.T.ConnectorTrust}}</dt><dd><span class="trust-badge trust-{{.Card.Trust}}">{{.Page.T.TrustName .Card.Trust}}</span> <span class="muted small">{{.Page.T.TrustText .Card.Trust}}</span></dd></div>
+      <div><dt>{{.Page.T.ConnectorLicense}}</dt><dd>{{.License}}</dd></div>
+      <div><dt>{{.Page.T.ConnectorSource}}</dt><dd><a href="{{.Repo}}">{{.Repo}}</a></dd></div>
+    </dl>
+  </div>
+</section>
+<section class="section section-tight">
+  <div class="wrap narrow-wrap">
+    <h2 class="h3">{{.Page.T.ConnectorInstall}}</h2>
+    <p class="muted">{{.Page.T.ConnectorInstallLead}}</p>
+    {{if .Card.Native}}<p class="muted">{{.Page.T.ConnectorNative}}</p>{{end}}
+    <div class="cmd-line">
+      <code><span class="cmd-prompt" aria-hidden="true">$</span> gate4ai connectors install {{.Card.Name}}</code>
+      <button class="copy" type="button" data-copy="gate4ai connectors install {{.Card.Name}}" data-done="{{.Page.T.Copied}}" hidden>{{.Page.T.Copy}}</button>
+    </div>
+
+    <h2 class="h3">{{.Page.T.ConnectorCaps}}</h2>
+    <p class="muted">{{.Page.T.ConnectorCapsLead}}</p>
+    <ul class="caps">
+      {{range .Card.Capabilities}}
+      <li><span>{{.Human}}</span><code>{{.Raw}}</code></li>
+      {{end}}
+    </ul>
+
+    <h2 class="h3">{{.Page.T.ConnectorVersions}}</h2>
+    <ul class="versions">
+      {{range .Versions}}
+      <li{{if .Revoked}} class="is-revoked"{{end}}>
+        <span class="mono">v{{.Version}}</span>
+        {{if .Latest}}<span class="pill pill-allow">{{$.Page.T.ConnectorLatest}}</span>{{end}}
+        {{if .Revoked}}<span class="pill pill-deny">{{$.Page.T.ConnectorRevoked}}</span> <span class="muted small">{{.Reason}}</span>{{end}}
+      </li>
+      {{end}}
+    </ul>
+  </div>
+</section>
+{{end}}

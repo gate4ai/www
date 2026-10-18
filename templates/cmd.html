@@ -1,0 +1,14 @@
+{{define "cmd"}}<div class="cmd" data-cmd>
+  <div class="cmd-tabs" role="tablist">
+    <a role="tab" href="?os=unix#install" data-os="unix" aria-selected="{{if .OS.IsWindows}}false{{else}}true{{end}}">{{.Page.T.OsUnix}}</a>
+    <a role="tab" href="?os=windows#install" data-os="windows" aria-selected="{{if .OS.IsWindows}}true{{else}}false{{end}}">{{.Page.T.OsWindows}}</a>
+  </div>
+  <div class="cmd-line" data-os-panel="unix"{{if .OS.IsWindows}} hidden{{end}}>
+    <code><span class="cmd-prompt" aria-hidden="true">$</span> curl -fsSL https://gate4.ai/install.sh | sh</code>
+    <button class="copy" type="button" data-copy="curl -fsSL https://gate4.ai/install.sh | sh" data-done="{{.Page.T.Copied}}" hidden>{{.Page.T.Copy}}</button>
+  </div>
+  <div class="cmd-line" data-os-panel="windows"{{if not .OS.IsWindows}} hidden{{end}}>
+    <code><span class="cmd-prompt" aria-hidden="true">PS&gt;</span> irm https://gate4.ai/install.ps1 | iex</code>
+    <button class="copy" type="button" data-copy="irm https://gate4.ai/install.ps1 | iex" data-done="{{.Page.T.Copied}}" hidden>{{.Page.T.Copy}}</button>
+  </div>
+</div>{{end}}

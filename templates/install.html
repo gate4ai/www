@@ -1,0 +1,35 @@
+{{define "content"}}
+<section class="page-head" id="install">
+  <div class="wrap narrow-wrap">
+    <h1 class="h1">{{.Page.T.InstallTitle}}</h1>
+    <p class="lead">{{.Page.T.InstallLead}}</p>
+    {{template "cmd" .}}
+    {{if .Latest}}<p class="hero-meta">{{.Page.T.InstallLatest}}: <a href="{{.Page.GitHub}}/releases/tag/{{.Latest}}">{{.Latest}}</a></p>{{end}}
+  </div>
+</section>
+<section class="section">
+  <div class="wrap narrow-wrap prose">
+    <h2 class="h3">{{.Page.T.InstallWhat}}</h2>
+    <ul class="checks">
+      {{range .Page.T.InstallWhatItems}}<li>{{.}}</li>{{end}}
+    </ul>
+
+    <h2 class="h3">{{.Page.T.InstallVars}}</h2>
+    <dl class="vars">
+      <dt><code>GATE4AI_VERSION=v0.1.1</code></dt><dd>{{if eq .Page.Lang.Code "ru"}}конкретная версия вместо последней{{else}}a specific version instead of the latest{{end}}</dd>
+      <dt><code>GATE4AI_INSTALL_DIR=…</code></dt><dd>{{if eq .Page.Lang.Code "ru"}}каталог установки (по умолчанию <code>~/.local/bin</code>, на Windows <code>%LOCALAPPDATA%\Programs\gate4ai</code>){{else}}install folder (default <code>~/.local/bin</code>, on Windows <code>%LOCALAPPDATA%\Programs\gate4ai</code>){{end}}</dd>
+      <dt><code>GATE4AI_NO_TRAY=1</code></dt><dd>{{if eq .Page.Lang.Code "ru"}}без значка в трее (серверы без графики){{else}}skip the tray icon app (headless servers){{end}}</dd>
+    </dl>
+    <div class="cmd-line cmd-static"><code>curl -fsSL https://gate4.ai/install.sh | GATE4AI_NO_TRAY=1 sh</code></div>
+
+    <h2 class="h3">{{.Page.T.InstallManual}}</h2>
+    <p>{{.Page.T.InstallManualText}} <a href="{{.Page.GitHub}}/releases">GitHub Releases</a></p>
+    <p>{{.Page.T.InstallSource}}</p>
+    <div class="cmd-line cmd-static"><code>go install github.com/gate4ai/gate4ai/cmd/gate4ai@latest</code></div>
+
+    <h2 class="h3">{{.Page.T.InstallNext}}</h2>
+    <p>{{.Page.T.InstallNextText}}</p>
+    <p><a class="btn" href="{{.Page.GitHub}}#readme">README</a></p>
+  </div>
+</section>
+{{end}}

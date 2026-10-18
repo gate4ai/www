@@ -1,0 +1,182 @@
+{{define "content"}}
+<section class="hero" id="install">
+  <div class="wrap hero-grid">
+    <div class="hero-copy">
+      <p class="eyebrow"><span class="eyebrow-dot" aria-hidden="true"></span>Open source · runs on your computer</p>
+      <h1 class="display">Your AI agents get <em>only</em> what you allow.</h1>
+      <p class="lead">gate4.ai is a guard for your computer. Claude, ChatGPT, OpenClaw and Hermes reach your email, files and browser through it, under your rules: allow, deny, or ask you first. Agents never see your passwords, and every action leaves proof.</p>
+      {{template "cmd" .}}
+      <p class="hero-meta">macOS, Linux, Windows · no admin rights{{if .Latest}} · <a href="{{.Page.GitHub}}/releases/latest">{{.Latest}}</a>{{end}}</p>
+    </div>
+    <figure class="demo" aria-label="Example: an agent asks to send an email, gate4.ai asks you, you allow it">
+      <div class="demo-bar"><span class="demo-dots" aria-hidden="true"><i></i><i></i><i></i></span><span>gate4ai · live journal</span></div>
+      <ol class="demo-steps">
+        <li class="step s1">
+          <span class="step-k">Agent</span>
+          <div><strong>Claude.ai</strong> wants <code>email.send</code><br><span class="muted">to landlord@example.com · “Rent for October”</span></div>
+        </li>
+        <li class="step s2">
+          <span class="step-k">Rule</span>
+          <div><code>email-send-trusted</code>: recipient is not in your trusted contacts <span class="pill pill-ask">ask</span></div>
+        </li>
+        <li class="step s3">
+          <span class="step-k">You</span>
+          <div class="notify">
+            <span class="notify-src">Telegram · gate4ai</span>
+            <span>Claude.ai wants to email landlord@example.com</span>
+            <span class="notify-btns"><span class="nb">Deny</span><span class="nb nb-yes">Allow</span></span>
+          </div>
+        </li>
+        <li class="step s4">
+          <span class="step-k">Proof</span>
+          <div><span class="pill pill-allow">sent</span> SMTP 250 OK · saved to journal <code>#1842</code></div>
+        </li>
+      </ol>
+    </figure>
+  </div>
+</section>
+
+<section class="band" id="problem">
+  <div class="wrap">
+    <h2 class="h2 narrow">Agents are getting the keys to everything. One bad email is enough to turn that into actions.</h2>
+    <ol class="problems">
+      <li><span class="num">01</span><h3>Too much access</h3><p>Personal agents get a whole shell, a logged-in browser and your entire mailbox. There is no “only this, only that much”.</p></li>
+      <li><span class="num">02</span><h3>Prompt injection becomes action</h3><p>A web page or an email with hidden instructions can make an agent forward your data or pay someone.</p></li>
+      <li><span class="num">03</span><h3>“Done” without proof</h3><p>Agents report success they did not achieve. Without a server response or a screenshot, you cannot tell.</p></li>
+    </ol>
+  </div>
+</section>
+
+<section class="section" id="how">
+  <div class="wrap">
+    <p class="kicker">How it works</p>
+    <h2 class="h2">One gate between all your agents and your computer.</h2>
+    <div class="flow" aria-label="Agent, then gate4.ai with your rules, then connector">
+      <div class="flow-node"><span class="flow-k">Your agents</span><span>Claude.ai · ChatGPT · Claude Code · OpenClaw · Hermes</span></div>
+      <div class="flow-arrow" aria-hidden="true"></div>
+      <div class="flow-node flow-gate">
+        <span class="flow-k">gate4.ai</span>
+        <span class="flow-effects"><span class="pill pill-allow">allow</span><span class="pill pill-deny">deny</span><span class="pill pill-ask">ask you</span></span>
+        <span class="muted small">rules · limits · vault · journal</span>
+      </div>
+      <div class="flow-arrow" aria-hidden="true"></div>
+      <div class="flow-node"><span class="flow-k">Connectors</span><span>Email · Files · Browser</span></div>
+    </div>
+    <div class="features">
+      <div class="feature">
+        <h3>Rules per agent</h3>
+        <p>Who, what, to whom and how much. Each agent gets its own token and profile, and one set of rules covers them all.</p>
+      </div>
+      <div class="feature">
+        <h3>Passwords stay with you</h3>
+        <p>Agents and connectors see aliases like <code>@mail.work</code>. gate4ai fills in the secret itself, only for the server it belongs to.</p>
+      </div>
+      <div class="feature">
+        <h3>Proof for every action</h3>
+        <p>Each request, decision and result goes to a tamper-evident journal. <code>gate4ai journal verify</code> checks it end to end.</p>
+      </div>
+      <div class="feature">
+        <h3>Approve from anywhere</h3>
+        <p>A desktop notification and the tray icon, Telegram, or the local Web UI. No answer in time means no.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section section-alt" id="rules">
+  <div class="wrap">
+    <p class="kicker">Rules in plain words</p>
+    <h2 class="h2">Say what is fine. gate4ai holds the line.</h2>
+    <div class="rules">
+      <article class="rule">
+        <div class="rule-say">
+          <h3>“Email my accountant freely. Anyone else, ask me first.”</h3>
+          <p class="muted">Trusted contacts go out at once; any other recipient waits for your tap.</p>
+        </div>
+<pre class="code"><code><span class="c-k">- id:</span> email-accountant
+  <span class="c-k">action:</span> email.send
+  <span class="c-k">when:</span> to.all(r, r in lists.contacts_trusted)
+  <span class="c-k">effect:</span> <span class="c-allow">allow</span>
+<span class="c-k">- id:</span> email-others
+  <span class="c-k">action:</span> email.send
+  <span class="c-k">effect:</span> <span class="c-ask">ask</span></code></pre>
+      </article>
+      <article class="rule">
+        <div class="rule-say">
+          <h3>“Read my notes. Change them only after I approve in Telegram.”</h3>
+          <p class="muted">Reading is silent; every edit becomes a message with Allow and Deny.</p>
+        </div>
+<pre class="code"><code><span class="c-k">- id:</span> notes-read
+  <span class="c-k">action:</span> files.read
+  <span class="c-k">when:</span> glob(path, "~/Documents/notes/**")
+  <span class="c-k">effect:</span> <span class="c-allow">allow</span>
+<span class="c-k">- id:</span> notes-append
+  <span class="c-k">action:</span> files.append
+  <span class="c-k">when:</span> glob(path, "~/Documents/notes/**")
+  <span class="c-k">effect:</span> <span class="c-ask">ask</span></code></pre>
+      </article>
+      <article class="rule">
+        <div class="rule-say">
+          <h3>“Never write to an address the agent found in an incoming email. And no more than 20 emails a day.”</h3>
+          <p class="muted">gate4ai tracks where each argument came from, so a planted address is refused.</p>
+        </div>
+<pre class="code"><code><span class="c-k">- id:</span> no-injected-recipients
+  <span class="c-k">action:</span> email.send
+  <span class="c-k">when:</span> "'untrusted_content' in provenance.to"
+  <span class="c-k">effect:</span> <span class="c-deny">deny</span>
+<span class="c-k">limits:</span>
+  - { id: mail-per-day, action: email.send, per_day: 20 }</code></pre>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="agents">
+  <div class="wrap">
+    <p class="kicker">Works with your agents</p>
+    <h2 class="h2">Cloud or local, one set of rules.</h2>
+    <div class="agents">
+      <div class="agent"><h3>Claude.ai</h3><p>Remote MCP through the relay. No open ports, and the relay cannot read your traffic.</p></div>
+      <div class="agent"><h3>ChatGPT</h3><p>The same remote MCP connector, connected with a one-time code.</p></div>
+      <div class="agent"><h3>Claude Code</h3><p>MCP over stdio, or fully isolated with <code>gate4ai run</code>: network and files only through gate4ai.</p></div>
+      <div class="agent"><h3>OpenClaw · Hermes</h3><p>CLI plus a ready skill file: <code>gate4ai skill &gt; SKILL.md</code>.</p></div>
+    </div>
+  </div>
+</section>
+
+{{if .Cards}}
+<section class="section section-alt" id="connectors">
+  <div class="wrap">
+    <p class="kicker">Connectors</p>
+    <div class="section-head">
+      <h2 class="h2">Each connector declares what it may touch.</h2>
+      <a class="link-arrow" href="{{.Page.P}}/connectors">All connectors</a>
+    </div>
+    <div class="cards">
+      {{range .Cards}}{{template "card" withPage $.Page .}}{{end}}
+    </div>
+  </div>
+</section>
+{{end}}
+
+<section class="section" id="trust">
+  <div class="wrap">
+    <p class="kicker">Built to be checked</p>
+    <h2 class="h2">You should not have to trust us. So you can verify.</h2>
+    <ul class="trust">
+      <li><h3>Open source</h3><p>Core, relay, SDK and connectors are on <a href="https://github.com/gate4ai">GitHub</a>. Core, relay and connectors are AGPL-3.0, the SDK is Apache-2.0.</p></li>
+      <li><h3>Signed releases</h3><p>Checksums are signed with cosign; the installer refuses a tampered archive.</p></li>
+      <li><h3>Signed connectors</h3><p>Packages are signed by the publisher, the store index by gate4.ai. Revoked versions do not install.</p></li>
+      <li><h3>Local first</h3><p>No account and no cloud. Your rules, secrets and journal stay on your computer; the relay is optional.</p></li>
+    </ul>
+  </div>
+</section>
+
+<section class="cta">
+  <div class="wrap cta-inner">
+    <h2 class="h2">Put a guard on your agents in a minute.</h2>
+    {{template "cmd" .}}
+    <p class="muted">Next steps are in the <a href="{{.Page.GitHub}}#readme">README</a>: start the daemon, add a connector, connect your agent.</p>
+  </div>
+</section>
+{{end}}
