@@ -31,10 +31,10 @@ README ядра уже ссылается на `https://gate4.ai/install.sh`, `h
 
 ### Требования к `install.sh` (macOS, Linux)
 
-- POSIX `sh`, без bash-измов; из зависимостей — только `curl` или `wget`, `tar`, `sha256sum` или `shasum`.
+- POSIX `sh`, без bash-измов; из зависимостей — только `curl` или GNU `wget` (оба — только HTTPS и TLS 1.2+), `tar`, `sha256sum` или `shasum`.
 - Определяет ОС (`uname -s`) и архитектуру (`uname -m`: `x86_64`/`amd64` → `amd64`, `aarch64`/`arm64` → `arm64`). Неподдерживаемая платформа — понятная ошибка со ссылкой на Releases.
 - Версия: последняя по умолчанию; `GATE4AI_VERSION=v0.1.1` — конкретная.
-- Скачивает архивы ядра и трея и `checksums.txt` (для трея macOS — `tray-darwin-checksums.txt`) и сверяет sha256. Если сумма не совпала, ничего не ставит и завершается с ошибкой. Если в системе есть `cosign`, дополнительно проверяет подпись `checksums.txt` (идентичность `^https://github.com/gate4ai/gate4ai/`, issuer `https://token.actions.githubusercontent.com`).
+- Скачивает архивы ядра и трея и `checksums.txt` (для трея macOS — `tray-darwin-checksums.txt`) и сверяет sha256. Если сумма не совпала, ничего не ставит и завершается с ошибкой. Если в системе есть `cosign`, дополнительно проверяет подпись `checksums.txt` (идентичность — только workflow релиза на теге: `^https://github.com/gate4ai/gate4ai/\.github/workflows/release\.yml@refs/tags/v`, issuer `https://token.actions.githubusercontent.com`).
 - Каталог установки: `GATE4AI_INSTALL_DIR`, иначе `~/.local/bin`. `sudo` сам не вызывает. Если каталога нет в `PATH`, печатает, как его добавить.
 - Повторный запуск обновляет установленную версию. Конфигурацию и данные не трогает. Daemon запускает только с `GATE4AI_START=1`: тогда вызывает `gate4ai service install` (daemon сейчас и при каждом входе; systemd --user / launchd, трей — в автозапуск входа).
 - В конце печатает версию (`gate4ai --version`) и следующие шаги со ссылкой на README («Первый запуск»): `gate4ai service install` (если автозапуск не включён) и `gate4ai ui`; `gate4ai ui` в терминале сам запускает daemon, если он не работает.
@@ -96,7 +96,7 @@ README ядра уже ссылается на `https://gate4.ai/install.sh`, `h
 
 ## 5. Хостинг (решено 2026-10-14)
 
-Сайт работает на сервере relay (136.148.221.24) за тем же портом 443. Relay маршрутизирует по SNI: `gate4ai-relay --route gate4.ai=127.0.0.1:8444 --route www.gate4.ai=127.0.0.1:8444` пробрасывает соединения **без расшифровки** ([протокол relay](../relay/docs/protocol.md)) на Caddy из стека наблюдаемости relay — тот же, что обслуживает `grafana.gate4.ai` ([relay/docs/observability.md](../relay/docs/observability.md)).
+Сайт работает на сервере relay (136.148.221.24) за тем же портом 443. Relay маршрутизирует по SNI: `gate4ai-relay --route gate4.ai=127.0.0.1:8444 --route www.gate4.ai=127.0.0.1:8444` пробрасывает соединения **без расшифровки** ([протокол relay](../gate4ai/relay/docs/protocol.md)) на Caddy из стека наблюдаемости relay — тот же, что обслуживает `grafana.gate4.ai` ([relay/docs/observability.md](../gate4ai/relay/docs/observability.md)).
 
 - **HTTPS завершает Caddy рядом с сайтом, а не relay.** Relay остаётся L4-маршрутизатором и ни для кого не расшифровывает трафик: это тот же принцип, что и для устройств. У relay нет ключей сайта, а сайт не зависит от релизов relay. (Решено 2026-10-18: до этого TLS и ACME были в самом сайте на `127.0.0.1:8443`.)
 - **Сертификаты** на `gate4.ai` и `www.gate4.ai` получает Caddy через ACME **TLS-ALPN-01**: проверка Let's Encrypt приходит на 443 с SNI `gate4.ai` и через маршрут попадает на Caddy. Порт 80 для этого не нужен.
