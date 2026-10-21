@@ -191,6 +191,15 @@ main() {
   # gate4ai is called by its full path: INSTALL_DIR may be missing from PATH.
   gate="$INSTALL_DIR/gate4ai"
   started=""
+  # An update: a daemon that is already running keeps the old binary until it restarts.
+  if [ -z "$START" ] && "$gate" daemon status >/dev/null 2>&1; then
+    if "$gate" daemon restart >/dev/null 2>&1; then
+      started=1
+      say "The running gate4ai daemon was restarted with the new version."
+    else
+      say "Restart the running daemon to use the new version: gate4ai daemon restart"
+    fi
+  fi
   if [ -n "$START" ]; then
     say ""
     no_tray_flag=""
