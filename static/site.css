@@ -265,6 +265,11 @@ p code, li code, dd code, .agent code { background: var(--c-surface-2); border: 
 .agent { padding: var(--s-5); border: 1px solid var(--c-border); border-radius: var(--radius-l); background: var(--c-surface); }
 .agent h3 { font-size: 1.25rem; margin-bottom: var(--s-3); }
 .agent p { color: var(--c-text-muted); margin: 0; font-size: 0.9375rem; }
+a.agent { display: grid; gap: var(--s-3); align-content: start; color: inherit; text-decoration: none; transition: border-color var(--dur) var(--ease); }
+a.agent h3 { margin-bottom: 0; }
+a.agent:hover { color: inherit; border-color: var(--c-accent); }
+.agent-more { font-size: var(--fs-small); font-weight: 600; color: var(--c-accent); }
+.agent-more::after { content: " \2192"; }
 
 /* карточки коннекторов */
 .cards { display: grid; gap: var(--s-4); }
@@ -274,7 +279,9 @@ p code, li code, dd code, .agent code { background: var(--c-surface-2); border: 
 .card:active { transform: none; }
 .card[hidden] { display: none; }
 .card-top { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); }
-.card-name { font-family: var(--font-mono); font-weight: 700; font-size: 1.125rem; }
+.card-title { display: flex; align-items: baseline; flex-wrap: wrap; gap: var(--s-1) var(--s-2); min-width: 0; }
+.card-name { font-weight: 700; font-size: 1.125rem; }
+.card-id { font-family: var(--font-mono); font-size: var(--fs-small); color: var(--c-text-muted); }
 .card-desc { color: var(--c-text); }
 .card-cap { font-size: var(--fs-small); color: var(--c-text-muted); border-left: 2px solid var(--c-accent); padding-left: var(--s-3); }
 .card-meta { font-size: var(--fs-small); color: var(--c-text-muted); font-family: var(--font-mono); }
@@ -319,7 +326,16 @@ p code, li code, dd code, .agent code { background: var(--c-surface-2); border: 
 .facts dd { margin: 0; overflow-wrap: anywhere; }
 .caps { list-style: none; padding: 0; margin: var(--s-4) 0 0; display: grid; gap: var(--s-3); }
 .caps li { display: grid; gap: var(--s-1); padding: var(--s-4); border: 1px solid var(--c-border); border-left: 3px solid var(--c-accent); border-radius: var(--radius-m); background: var(--c-surface); }
-.caps code { font-size: 0.8125rem; color: var(--c-text-muted); overflow-wrap: anywhere; }
+.connector-id { margin: calc(-1 * var(--s-2)) 0 var(--s-3); color: var(--c-text-muted); }
+.open-local { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2) var(--s-3); margin: var(--s-3) 0 var(--s-5); }
+.tech, .admin { margin: var(--s-4) 0 0; border: 1px solid var(--c-border); border-radius: var(--radius-m); padding: var(--s-3) var(--s-4); }
+.tech summary, .admin summary { cursor: pointer; font-weight: 600; color: var(--c-text); }
+.tech summary:focus-visible, .admin summary:focus-visible { outline: 2px solid var(--c-focus); outline-offset: 2px; border-radius: var(--radius-s); }
+.tech[open] summary, .admin[open] summary { margin-bottom: var(--s-3); }
+.tech-list { list-style: none; padding: 0; margin: var(--s-2) 0 0; display: grid; gap: var(--s-2); }
+.tech-list code { font-size: 0.8125rem; color: var(--c-text-muted); overflow-wrap: anywhere; }
+.admin { margin-top: var(--s-6); }
+.prose .cmd-line { margin: var(--s-3) 0; }
 .versions { list-style: none; padding: 0; margin: var(--s-4) 0 0; display: grid; gap: var(--s-2); }
 .versions li { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2) var(--s-3); padding: var(--s-3) var(--s-4); border: 1px solid var(--c-border); border-radius: var(--radius-m); }
 .versions .is-revoked .mono { text-decoration: line-through; color: var(--c-text-muted); }
@@ -356,5 +372,10 @@ p code, li code, dd code, .agent code { background: var(--c-surface-2); border: 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   *, *::before, *::after { transition-duration: 0.01ms !important; }
+}
+/* печать: анимации появления не прячут содержимое */
+@media print {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  .problems li, .feature, .rule, .agent, .card, .trust li, .flow-node { opacity: 1 !important; translate: none !important; }
 }
 @media (max-width: 420px) { .step { grid-template-columns: minmax(0, 1fr); gap: var(--s-1); } }

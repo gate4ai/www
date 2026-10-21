@@ -7,13 +7,21 @@
 #   GATE4AI_VERSION=v0.1.1    install a specific version (default: latest)
 #   GATE4AI_INSTALL_DIR=DIR   install folder (default: ~/.local/bin)
 #   GATE4AI_NO_TRAY=1         do not install the tray icon app (headless servers)
-#   GATE4AI_START=1           start the daemon now and at every login
-#                             (gate4ai service install: systemd --user / launchd)
+#   GATE4AI_NO_START=1        do not turn on the autostart. By default the
+#                             installer runs gate4ai service install: the daemon
+#                             starts now and at every login (systemd --user /
+#                             launchd), the tray icon at every login.
+#                             (GATE4AI_START=1 is accepted for compatibility;
+#                             the autostart is on by default now.)
+#   GATE4AI_NO_OPEN=1         do not open the Web UI after installing. By default,
+#                             in a graphical session (Linux: DISPLAY or
+#                             WAYLAND_DISPLAY; macOS outside SSH) and outside CI
+#                             (CI not set), the installer runs gate4ai ui: the
+#                             browser opens the setup wizard.
 #
 # Downloads the release from GitHub, checks sha256 checksums (and the cosign
-# signature when cosign is installed) and only then installs. Never calls sudo,
-# never touches your configuration or data, and starts the daemon only with
-# GATE4AI_START=1.
+# signature when cosign is installed) and only then installs. Never calls sudo
+# and never touches your configuration or data.
 #
 # The whole script is one function called on the last line: a download cut
 # short by the network does not run half of it.
@@ -27,7 +35,8 @@ main() {
   RELEASES="https://github.com/$REPO/releases"
   INSTALL_DIR="${GATE4AI_INSTALL_DIR:-$HOME/.local/bin}"
   NO_TRAY="${GATE4AI_NO_TRAY:-}"
-  START="${GATE4AI_START:-}"
+  NO_START="${GATE4AI_NO_START:-}"
+  NO_OPEN="${GATE4AI_NO_OPEN:-}"
 
   say() { printf '%s\n' "$*"; }
   fail() {
@@ -190,38 +199,44 @@ main() {
 
   # gate4ai is called by its full path: INSTALL_DIR may be missing from PATH.
   gate="$INSTALL_DIR/gate4ai"
-  started=""
-  # An update: a daemon that is already running keeps the old binary until it restarts.
-  if [ -z "$START" ] && "$gate" daemon status >/dev/null 2>&1; then
-    if "$gate" daemon restart >/dev/null 2>&1; then
-      started=1
-      say "The running gate4ai daemon was restarted with the new version."
-    else
-      say "Restart the running daemon to use the new version: gate4ai daemon restart"
+  running=""
+  if [ -n "$NO_START" ]; then
+    # An update: a daemon that is already running keeps the old binary until it restarts.
+    if "$gate" daemon status >/dev/null 2>&1; then
+      if "$gate" daemon restart >/dev/null 2>&1; then
+        running=1
+        say "The running gate4ai daemon was restarted with the new version."
+      else
+        say "Restart the running daemon to use the new version: gate4ai daemon restart"
+      fi
     fi
-  fi
-  if [ -n "$START" ]; then
+  else
+    # The autostart; it also restarts a daemon that is already running (an update).
     say ""
     no_tray_flag=""
     [ -n "$tray" ] || no_tray_flag="--no-tray"
     # shellcheck disable=SC2086
     if "$gate" service install $no_tray_flag >/dev/null; then
-      started=1
+      running=1
       say "The gate4ai daemon is running and starts at every login (gate4ai service status)."
     else
-      say "Could not set up the autostart; start the daemon yourself (below)."
+      say "Could not set up the autostart: gate4ai ui starts the daemon for this session."
     fi
   fi
 
+  # The Web UI shows the setup wizard: open it right away in a graphical session.
+  graphical=""
+  case "$os" in
+    linux) [ -z "${DISPLAY:-}${WAYLAND_DISPLAY:-}" ] || graphical=1 ;;
+    darwin) [ -n "${SSH_CONNECTION:-}${SSH_TTY:-}" ] || graphical=1 ;;
+  esac
   say ""
-  say "Next steps:"
-  if [ -z "$started" ]; then
-    say "  gate4ai service install   # run the guard now and at every login"
-    say "                            # (or: gate4ai daemon start — until logout; gate4ai daemon — in this terminal)"
+  if [ -n "$running" ] && [ -n "$graphical" ] && [ -z "${CI:-}" ] && [ -z "$NO_OPEN" ] &&
+    "$gate" ui; then
+    say "The setup wizard is open in your browser. Open it again any time: gate4ai ui"
+  else
+    say "Next: gate4ai ui   # opens the setup wizard in your browser"
   fi
-  say "  gate4ai ui                # open the Web UI (starts the guard if it is not running)"
-  [ -z "$tray" ] || [ -n "$started" ] || say "  gate4ai-tray &            # tray icon: status, Allow / Deny, Web UI (service install adds it to login)"
-  say "First run guide: https://github.com/$REPO#readme"
 }
 
 main "$@"

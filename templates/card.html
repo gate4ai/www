@@ -1,9 +1,9 @@
 {{define "card"}}<a class="card" href="{{.Page.P}}/connectors/{{.C.Name}}">
   <span class="card-top">
-    <span class="card-name">{{.C.Name}}</span>
+    <span class="card-title"><span class="card-name">{{.C.Title}}</span>{{if ne .C.Title .C.Name}} <span class="card-id">{{.C.Name}}</span>{{end}}</span>
     <span class="trust-badge trust-{{.C.Trust}}">{{.Page.T.TrustName .C.Trust}}</span>
   </span>
   <span class="card-desc">{{.C.Description}}</span>
-  {{with .C.Capabilities}}<span class="card-cap">{{(index . 0).Human}}</span>{{end}}
+  {{with .C.Summary}}<span class="card-cap">{{index . 0}}</span>{{end}}
   <span class="card-meta">{{.C.Publisher}}{{if .C.Version}} · v{{.C.Version}}{{end}}</span>
 </a>{{end}}

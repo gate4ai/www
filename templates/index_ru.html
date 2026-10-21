@@ -136,10 +136,10 @@
     <p class="kicker">Работает с вашими агентами</p>
     <h2 class="h2">Облачные и локальные — по одним правилам.</h2>
     <div class="agents">
-      <div class="agent"><h3>Claude.ai</h3><p>Remote MCP через relay. Порты открывать не нужно, а relay не может прочитать ваш трафик.</p></div>
-      <div class="agent"><h3>ChatGPT</h3><p>Тот же remote MCP-коннектор, подключается одноразовым кодом.</p></div>
-      <div class="agent"><h3>Claude Code</h3><p>MCP по stdio или полная изоляция через <code>gate4ai run</code>: сеть и файлы только через gate4ai.</p></div>
-      <div class="agent"><h3>OpenClaw · Hermes</h3><p>CLI и готовый skill: <code>gate4ai skill &gt; SKILL.md</code>.</p></div>
+      <a class="agent" href="{{.Page.P}}/install#next"><h3>Claude.ai</h3><p>Remote MCP через relay. Порты открывать не нужно, а relay не может прочитать ваш трафик.</p><span class="agent-more">Как подключить</span></a>
+      <a class="agent" href="{{.Page.P}}/install#next"><h3>ChatGPT</h3><p>Тот же remote MCP-коннектор, подключается одноразовым кодом.</p><span class="agent-more">Как подключить</span></a>
+      <a class="agent" href="{{.Page.P}}/install#next"><h3>Claude Code</h3><p>MCP по stdio или полная изоляция через <code>gate4ai run</code>: сеть и файлы только через gate4ai.</p><span class="agent-more">Как подключить</span></a>
+      <a class="agent" href="{{.Page.P}}/install#next"><h3>OpenClaw · Hermes</h3><p>CLI и готовый skill: <code>gate4ai skill &gt; SKILL.md</code>.</p><span class="agent-more">Как подключить</span></a>
     </div>
   </div>
 </section>
@@ -176,7 +176,7 @@
   <div class="wrap cta-inner">
     <h2 class="h2">Поставьте стража на своих агентов за минуту.</h2>
     {{template "cmd" .}}
-    <p class="muted">Дальше — в <a href="{{.Page.GitHub}}#первый-запуск">README</a>: запустите daemon, добавьте коннектор, подключите агента.</p>
+    <p class="muted">Затем <code>gate4ai ui</code>: в браузере откроется мастер настройки — подключит агента, папки и сайты. На компьютере с рабочим столом установщик откроет его сам. <a href="{{.Page.P}}/install#next">Подробнее</a></p>
   </div>
 </section>
 {{end}}

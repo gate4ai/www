@@ -14,22 +14,31 @@
       {{range .Page.T.InstallWhatItems}}<li>{{.}}</li>{{end}}
     </ul>
 
-    <h2 class="h3">{{.Page.T.InstallVars}}</h2>
-    <dl class="vars">
-      <dt><code>GATE4AI_VERSION=v0.1.1</code></dt><dd>{{if eq .Page.Lang.Code "ru"}}конкретная версия вместо последней{{else}}a specific version instead of the latest{{end}}</dd>
-      <dt><code>GATE4AI_INSTALL_DIR=…</code></dt><dd>{{if eq .Page.Lang.Code "ru"}}каталог установки (по умолчанию <code>~/.local/bin</code>, на Windows <code>%LOCALAPPDATA%\Programs\gate4ai</code>){{else}}install folder (default <code>~/.local/bin</code>, on Windows <code>%LOCALAPPDATA%\Programs\gate4ai</code>){{end}}</dd>
-      <dt><code>GATE4AI_NO_TRAY=1</code></dt><dd>{{if eq .Page.Lang.Code "ru"}}без значка в трее (серверы без графики){{else}}skip the tray icon app (headless servers){{end}}</dd>
-    </dl>
-    <div class="cmd-line cmd-static"><code>curl -fsSL https://gate4.ai/install.sh | GATE4AI_NO_TRAY=1 sh</code></div>
+    <h2 class="h3" id="next">{{.Page.T.InstallNext}}</h2>
+    <p>{{.Page.T.InstallNextText}}</p>
+    <div class="cmd-line">
+      <code><span class="cmd-prompt" aria-hidden="true">$</span> gate4ai ui</code>
+      <button class="copy" type="button" data-copy="gate4ai ui" data-done="{{.Page.T.Copied}}" hidden>{{.Page.T.Copy}}</button>
+    </div>
+    <p class="small"><a href="{{.Page.GitHub}}#readme">{{.Page.T.InstallNextReadme}}</a></p>
 
     <h2 class="h3">{{.Page.T.InstallManual}}</h2>
     <p>{{.Page.T.InstallManualText}} <a href="{{.Page.GitHub}}/releases">GitHub Releases</a></p>
     <p>{{.Page.T.InstallSource}}</p>
     <div class="cmd-line cmd-static"><code>go install github.com/gate4ai/gate4ai/cmd/gate4ai@latest</code></div>
 
-    <h2 class="h3">{{.Page.T.InstallNext}}</h2>
-    <p>{{.Page.T.InstallNextText}}</p>
-    <p><a class="btn" href="{{.Page.GitHub}}#readme">README</a></p>
+    <details class="admin" id="options">
+      <summary>{{.Page.T.InstallVars}}</summary>
+      <p>{{.Page.T.InstallVarsLead}}</p>
+      <dl class="vars">
+        <dt><code>GATE4AI_VERSION=v0.1.1</code></dt><dd>{{if eq .Page.Lang.Code "ru"}}конкретная версия вместо последней{{else}}a specific version instead of the latest{{end}}</dd>
+        <dt><code>GATE4AI_INSTALL_DIR=…</code></dt><dd>{{if eq .Page.Lang.Code "ru"}}каталог установки (по умолчанию <code>~/.local/bin</code>, на Windows <code>%LOCALAPPDATA%\Programs\gate4ai</code>){{else}}install folder (default <code>~/.local/bin</code>, on Windows <code>%LOCALAPPDATA%\Programs\gate4ai</code>){{end}}</dd>
+        <dt><code>GATE4AI_NO_TRAY=1</code></dt><dd>{{if eq .Page.Lang.Code "ru"}}без значка в трее (серверы без графики){{else}}skip the tray icon app (headless servers){{end}}</dd>
+        <dt><code>GATE4AI_NO_START=1</code></dt><dd>{{if eq .Page.Lang.Code "ru"}}не включать автозапуск (<code>gate4ai service install</code>); запущенный daemon при обновлении всё равно перезапускается{{else}}do not turn on the autostart (<code>gate4ai service install</code>); a running daemon is still restarted on update{{end}}</dd>
+        <dt><code>GATE4AI_NO_OPEN=1</code></dt><dd>{{if eq .Page.Lang.Code "ru"}}не открывать мастер в браузере после установки (и так не открывается без графической сессии и при заданной <code>CI</code>){{else}}do not open the setup wizard in the browser after installing (it is not opened anyway without a graphical session or with <code>CI</code> set){{end}}</dd>
+      </dl>
+      <div class="cmd-line cmd-static"><code>curl -fsSL https://gate4.ai/install.sh | GATE4AI_NO_TRAY=1 GATE4AI_NO_OPEN=1 sh</code></div>
+    </details>
   </div>
 </section>
 {{end}}

@@ -35,14 +35,15 @@ jobs:
           GATE4AI_SITE=http://127.0.0.1:8000 GATE4AI_INSTALL_DIR="$RUNNER_TEMP/bin" sh install/install.sh
           "$RUNNER_TEMP/bin/gate4ai" --version
           test -x "$RUNNER_TEMP/bin/gate4ai-tray"
-      - name: Site unavailable, fallback to GitHub API; no tray; re-run updates
+      - name: Site unavailable, fallback to GitHub API; no tray; no autostart; re-run updates
         run: |
+          export GATE4AI_NO_START=1
           GATE4AI_SITE=http://127.0.0.1:1 GATE4AI_NO_TRAY=1 GATE4AI_INSTALL_DIR="$RUNNER_TEMP/bin2" sh install/install.sh
           "$RUNNER_TEMP/bin2/gate4ai" --version
           test ! -e "$RUNNER_TEMP/bin2/gate4ai-tray"
           GATE4AI_SITE=http://127.0.0.1:1 GATE4AI_NO_TRAY=1 GATE4AI_INSTALL_DIR="$RUNNER_TEMP/bin2" sh install/install.sh
       - name: Pinned version via curl | sh
-        run: cat install/install.sh | GATE4AI_VERSION=v0.1.1 GATE4AI_NO_TRAY=1 GATE4AI_INSTALL_DIR="$RUNNER_TEMP/bin3" sh
+        run: cat install/install.sh | GATE4AI_VERSION=v0.1.1 GATE4AI_NO_TRAY=1 GATE4AI_NO_START=1 GATE4AI_INSTALL_DIR="$RUNNER_TEMP/bin3" sh
       - name: Tampered archive is not installed
         run: |
           tag=$(cat site/latest); ver=${tag#v}

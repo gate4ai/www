@@ -2,7 +2,8 @@
 <section class="page-head">
   <div class="wrap narrow-wrap">
     <p><a class="link-back" href="{{.Page.P}}/connectors">{{.Page.T.ConnectorBack}}</a></p>
-    <h1 class="h1 mono">{{.Card.Name}}</h1>
+    <h1 class="h1">{{.Card.Title}}</h1>
+    {{if ne .Card.Title .Card.Name}}<p class="connector-id mono">{{.Card.Name}}</p>{{end}}
     <p class="lead">{{.Card.Description}}</p>
     <dl class="facts">
       <div><dt>{{.Page.T.ConnectorPublisher}}</dt><dd>{{.Card.Publisher}}</dd></div>
@@ -21,14 +22,24 @@
       <code><span class="cmd-prompt" aria-hidden="true">$</span> gate4ai connectors install {{.Card.Name}}</code>
       <button class="copy" type="button" data-copy="gate4ai connectors install {{.Card.Name}}" data-done="{{.Page.T.Copied}}" hidden>{{.Page.T.Copy}}</button>
     </div>
+    <p class="open-local"><a class="btn btn-sm" href="http://127.0.0.1:7431/connectors?install={{.Card.Name}}">{{.Page.T.ConnectorOpen}}</a> <span class="muted small">{{.Page.T.ConnectorOpenNote}}</span></p>
 
     <h2 class="h3">{{.Page.T.ConnectorCaps}}</h2>
     <p class="muted">{{.Page.T.ConnectorCapsLead}}</p>
     <ul class="caps">
-      {{range .Card.Capabilities}}
-      <li><span>{{.Human}}</span><code>{{.Raw}}</code></li>
+      {{range .Card.Summary}}
+      <li>{{.}}</li>
       {{end}}
     </ul>
+    {{with .Card.Capabilities}}
+    <details class="tech">
+      <summary>{{$.Page.T.ConnectorTechnical}}</summary>
+      <p class="muted small">{{$.Page.T.ConnectorTechLead}}</p>
+      <ul class="tech-list">
+        {{range .}}<li><code>{{.Raw}}</code></li>{{end}}
+      </ul>
+    </details>
+    {{end}}
 
     <h2 class="h3">{{.Page.T.ConnectorVersions}}</h2>
     <ul class="versions">
