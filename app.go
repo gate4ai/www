@@ -18,7 +18,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/gate4ai/sdk-go/registry"
+	"github.com/gate4ai/gate4ai/sdk-go/registry"
 )
 
 var (
@@ -332,7 +332,11 @@ func (a *App) connector(lang Lang) http.HandlerFunc {
 			return
 		}
 		card := c.Card(name, lang)
-		v := connectorView{Card: card, License: e.License, Repo: e.Repo,
+		repo := e.Repo
+		if e.Path != "" && strings.HasPrefix(repo, "https://github.com/") {
+			repo = strings.TrimSuffix(repo, "/") + "/tree/main/" + e.Path // каталог коннектора в монорепозитории
+		}
+		v := connectorView{Card: card, License: e.License, Repo: repo,
 			Page: newPage(lang, "/connectors/"+name, name+": "+lang.Tr().CatalogTitle, card.Description)}
 		for i := len(e.Versions) - 1; i >= 0; i-- {
 			ver := e.Versions[i].Version

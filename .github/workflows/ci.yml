@@ -22,7 +22,7 @@ jobs:
         with:
           go-version-file: go.mod
           cache: false
-      # Кэш Go с запасным ключом: после смены go.sum (обновление sdk-go при деплое)
+      # Кэш Go с запасным ключом: после смены go.sum (обновление gate4ai при деплое)
       # сборка начинается с прошлого кэша, а не с нуля, как у кэша setup-go.
       - uses: actions/cache@v4
         with:

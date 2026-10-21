@@ -283,6 +283,17 @@ func TestRevokedVersion(t *testing.T) {
 	}
 }
 
+// Коннектор в монорепозитории (path): «Исходник» ведёт в его каталог.
+func TestConnectorRepoPath(t *testing.T) {
+	a := testApp(t, true)
+	e := a.Catalog().Index.Connectors["email"]
+	e.Repo, e.Path = "https://github.com/gate4ai/gate4ai", "connectors/mail"
+	a.Catalog().Index.Connectors["email"] = e
+	if r := get(a, "/connectors/email"); !strings.Contains(r.body, `href="https://github.com/gate4ai/gate4ai/tree/main/connectors/mail"`) {
+		t.Error("source link to the connector folder")
+	}
+}
+
 func TestHTMLIsEscaped(t *testing.T) {
 	r := get(testApp(t, true), "/connectors?q=%3Cscript%3Ealert(1)%3C/script%3E")
 	if strings.Contains(r.body, "<script>alert(1)") {

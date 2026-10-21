@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gate4ai/sdk-go/registry"
+	"github.com/gate4ai/gate4ai/sdk-go/registry"
 )
 
 func revocation(name, version, reason string) registry.Revocation {
