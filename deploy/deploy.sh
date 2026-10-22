@@ -3,7 +3,8 @@
 # Not stored on the server. The project lives in /opt/gate4ai-www: compose.yaml (uploaded
 # by CI), .env with WWW_TAG (the image tag, written here), www.env (secrets, by hand).
 #
-#   up <tag>   pull ghcr.io/gate4ai/www:<tag> and start it; keep the previous tag in .env.prev.
+#   up <tag>   pull ghcr.io/gate4ai/www:<tag> (a failed pull changes nothing) and start it;
+#              keep the previous tag in .env.prev.
 #              If http://127.0.0.1:8080/healthz does not answer, start the previous tag again.
 #   rollback   start the previous tag again (CI: https://gate4.ai/healthz does not answer).
 #
@@ -11,7 +12,7 @@
 # (CI logs in with its job token and logs out after the deploy).
 set -eu
 
-DIR=/opt/gate4ai-www
+DIR=${GATE4AI_WWW_DIR:-/opt/gate4ai-www} # другой каталог — только в тестах (deploy_test.go)
 cd "$DIR"
 
 health() {
@@ -24,9 +25,13 @@ health() {
   return 1
 }
 
+# pull <tag> — the image is pulled before .env changes: if the pull fails, .env keeps the
+# tag that runs now, and a restart of the host does not try an image that is not there.
+pull() { WWW_TAG=$1 docker compose pull -q; }
+
 start() { # start <tag>
+  pull "$1"
   printf 'WWW_TAG=%s\n' "$1" >.env.tmp && mv -f .env.tmp .env
-  docker compose pull -q
   docker compose up -d --remove-orphans
 }
 
@@ -45,6 +50,7 @@ rollback() {
 case "${1:-}" in
 up)
   tag=${2:?usage: deploy.sh up <tag>}
+  pull "$tag"
   if [ -f .env ] && ! grep -qx "WWW_TAG=$tag" .env; then cp -p .env .env.prev; fi
   start "$tag"
   if health; then
