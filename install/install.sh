@@ -11,8 +11,6 @@
 #                             installer runs gate4ai service install: the daemon
 #                             starts now and at every login (systemd --user /
 #                             launchd), the tray icon at every login.
-#                             (GATE4AI_START=1 is accepted for compatibility;
-#                             the autostart is on by default now.)
 #   GATE4AI_NO_OPEN=1         do not open the Web UI after installing. By default,
 #                             in a graphical session (Linux: DISPLAY or
 #                             WAYLAND_DISPLAY; macOS outside SSH) and outside CI

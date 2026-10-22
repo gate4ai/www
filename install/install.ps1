@@ -10,8 +10,6 @@
 #                                     installer runs gate4ai service install: the
 #                                     daemon starts now and at every login (HKCU Run
 #                                     key), the tray icon at every login.
-#                                     (GATE4AI_START=1 is accepted for compatibility;
-#                                     the autostart is on by default now.)
 #   $env:GATE4AI_NO_OPEN = '1'        do not open the Web UI after installing. By
 #                                     default, outside CI (CI not set), the installer
 #                                     runs gate4ai ui: the browser opens the setup

@@ -1,6 +1,6 @@
 # gate4.ai — сайт
 
-Сайт https://gate4.ai: продающий лендинг (en, ru), установщики `install.sh` / `install.ps1`, каталог коннекторов из подписанного [registry](https://github.com/gate4ai/registry). Требования — [REQUIREMENTS.md](REQUIREMENTS.md), UX онбординга — [UX-ONBOARDING.md](UX-ONBOARDING.md).
+Сайт https://gate4.ai: продающий лендинг (en, ru), установщики `install.sh` / `install.ps1`, каталог коннекторов из подписанного [registry](https://github.com/gate4ai/registry). Требования — [REQUIREMENTS.md](REQUIREMENTS.md).
 
 Один бинарник на Go (стандартная библиотека, шаблоны `html/template`): HTML, CSS, JS и скрипты установки встроены в него через `embed`. Формат индекса registry и проверка его подписи — пакет [`sdk-go/registry`](https://github.com/gate4ai/gate4ai/tree/main/sdk-go/registry) модуля `github.com/gate4ai/gate4ai` (обновляется на каждый релиз gate4ai: `dev/scripts/deploy.sh gate4ai-bump`), те же правила, что у `gate4ai registry check`. Страницы рендерятся на сервере и работают без JavaScript; JS (2 КБ) — только «скопировать», вкладки ОС и фильтр каталога. Без трекеров, cookies, сторонних скриптов и шрифтов.
 
@@ -39,7 +39,7 @@ gofmt -l . && go vet ./... && go test ./...
 
 Каталога состояния нет: индекс и версия живут в памяти и после перезапуска загружаются заново (до загрузки `/connectors` пишет, что каталог загружается, `/latest` отвечает 503).
 
-Параметры установщиков для пользователя (описаны в заголовках скриптов и на `/install` под «Для администраторов»): `GATE4AI_VERSION`, `GATE4AI_INSTALL_DIR`, `GATE4AI_NO_TRAY`, `GATE4AI_NO_START` (не включать автозапуск — по умолчанию установщик вызывает `gate4ai service install`; прежний `GATE4AI_START=1` принимается и ничего не меняет), `GATE4AI_NO_OPEN` (не открывать мастер `gate4ai ui` в браузере после установки — по умолчанию открывается в графической сессии и вне CI). Для тестов установщики понимают `GATE4AI_SITE` (откуда брать `/latest`) и `GATE4AI_DOWNLOAD_BASE` (зеркало релизов).
+Параметры установщиков для пользователя (описаны в заголовках скриптов и на `/install` под «Для администраторов»): `GATE4AI_VERSION`, `GATE4AI_INSTALL_DIR`, `GATE4AI_NO_TRAY`, `GATE4AI_NO_START` (не включать автозапуск — по умолчанию установщик вызывает `gate4ai service install`), `GATE4AI_NO_OPEN` (не открывать мастер `gate4ai ui` в браузере после установки — по умолчанию открывается в графической сессии и вне CI). Для тестов установщики понимают `GATE4AI_SITE` (откуда брать `/latest`) и `GATE4AI_DOWNLOAD_BASE` (зеркало релизов).
 
 ## CI и деплой
 
@@ -50,6 +50,6 @@ gofmt -l . && go vet ./... && go test ./...
 
 Снаружи: relay пробрасывает `gate4.ai` и `www.gate4.ai` по SNI без расшифровки на Caddy (`--route gate4.ai=127.0.0.1:8444 --route www.gate4.ai=127.0.0.1:8444`), Caddy получает сертификаты Let's Encrypt (TLS-ALPN-01), сжимает ответы и проксирует на `127.0.0.1:8080`; `www.gate4.ai` сайт перенаправляет на `gate4.ai`.
 
-Нужно в настройках репозитория: переменная `DEPLOY_HOST`, секреты `DEPLOY_SSH_KEY` (приватный ключ, его публичная часть — в `/root/.ssh/authorized_keys` сервера) и `DEPLOY_KNOWN_HOSTS` (`ssh-keyscan <host>`). Пока `DEPLOY_HOST` не задан, деплой пропускается.
+Нужно в настройках репозитория: переменная `DEPLOY_HOST`, секреты `DEPLOY_SSH_KEY` (приватный ключ, его публичная часть — в `/root/.ssh/authorized_keys` сервера) и `DEPLOY_KNOWN_HOSTS` (`ssh-keyscan <host>`). Без `DEPLOY_HOST` деплой пропускается.
 
 Локально так же, как на сервере: `docker build -t ghcr.io/gate4ai/www:dev . && WWW_TAG=dev docker compose -f deploy/compose.yaml up -d`.
