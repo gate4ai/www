@@ -235,20 +235,20 @@ func TestScriptsAndLatest(t *testing.T) {
 		t.Error("install.sh: the last line calls main")
 	}
 	// Автозапуск по умолчанию, отказ — GATE4AI_NO_START; мастер в браузере — gate4ai ui, отказ — GATE4AI_NO_OPEN.
-	for _, want := range []string{"GATE4AI_NO_START", "GATE4AI_NO_OPEN", "GATE4AI_START=1", "service install", `"$gate" ui`,
+	for _, want := range []string{"GATE4AI_NO_START", "GATE4AI_NO_OPEN", "service install", `"$gate" ui`,
 		"WAYLAND_DISPLAY", "${CI:-}", "Next: gate4ai ui   # opens the setup wizard in your browser", "daemon restart"} {
 		if !strings.Contains(r.body, want) {
 			t.Errorf("install.sh: no %q", want)
 		}
 	}
-	if strings.Contains(r.body, "Next steps:") || strings.Contains(r.body, `START="${GATE4AI_START`) {
-		t.Error("install.sh: one next step, autostart without GATE4AI_START")
+	if strings.Contains(r.body, "Next steps:") || strings.Contains(r.body, "GATE4AI_START") {
+		t.Error("install.sh: one next step, no GATE4AI_START")
 	}
 	r = get(a, "/install.ps1")
 	if r.status != http.StatusOK || !strings.HasSuffix(strings.TrimRight(r.body, "\r\n"), "Install-Gate4ai") {
 		t.Error("install.ps1")
 	}
-	for _, want := range []string{"GATE4AI_NO_START", "GATE4AI_NO_OPEN", "GATE4AI_START=1", "service", "& $exe ui",
+	for _, want := range []string{"GATE4AI_NO_START", "GATE4AI_NO_OPEN", "service", "& $exe ui",
 		"$env:CI", "Next: gate4ai ui   # opens the setup wizard in your browser"} {
 		if !strings.Contains(r.body, want) {
 			t.Errorf("install.ps1: no %q", want)
