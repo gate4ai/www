@@ -1,7 +1,7 @@
 name: installers
 
 # Real installs from GitHub Releases on clean runners. Runs only when the
-# installers change (macOS minutes are expensive in a private repository).
+# installers change.
 on:
   push:
     branches: [main]
