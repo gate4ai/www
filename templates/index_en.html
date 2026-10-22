@@ -136,10 +136,10 @@
     <p class="kicker">Works with your agents</p>
     <h2 class="h2">Cloud or local, one set of rules.</h2>
     <div class="agents">
-      <div class="agent"><h3>Claude.ai</h3><p>Remote MCP through the relay. No open ports, and the relay cannot read your traffic.</p></div>
-      <div class="agent"><h3>ChatGPT</h3><p>The same remote MCP connector, connected with a one-time code.</p></div>
-      <div class="agent"><h3>Claude Code</h3><p>MCP over stdio, or fully isolated with <code>gate4ai run</code>: network and files only through gate4ai.</p></div>
-      <div class="agent"><h3>OpenClaw · Hermes</h3><p>CLI plus a ready skill file: <code>gate4ai skill &gt; SKILL.md</code>.</p></div>
+      <a class="agent" href="{{.Page.P}}/install#next"><h3>Claude.ai</h3><p>Remote MCP through the relay. No open ports, and the relay cannot read your traffic.</p><span class="agent-more">How to connect</span></a>
+      <a class="agent" href="{{.Page.P}}/install#next"><h3>ChatGPT</h3><p>The same remote MCP connector, connected with a one-time code.</p><span class="agent-more">How to connect</span></a>
+      <a class="agent" href="{{.Page.P}}/install#next"><h3>Claude Code</h3><p>MCP over stdio, or fully isolated with <code>gate4ai run</code>: network and files only through gate4ai.</p><span class="agent-more">How to connect</span></a>
+      <a class="agent" href="{{.Page.P}}/install#next"><h3>OpenClaw · Hermes</h3><p>CLI plus a ready skill file: <code>gate4ai skill &gt; SKILL.md</code>.</p><span class="agent-more">How to connect</span></a>
     </div>
   </div>
 </section>
@@ -176,7 +176,7 @@
   <div class="wrap cta-inner">
     <h2 class="h2">Put a guard on your agents in a minute.</h2>
     {{template "cmd" .}}
-    <p class="muted">Next steps are in the <a href="{{.Page.GitHub}}#readme">README</a>: start the daemon, add a connector, connect your agent.</p>
+    <p class="muted">Then run <code>gate4ai ui</code>: the setup wizard opens in your browser and connects your agent, folders and sites. The installer opens it for you on a computer with a desktop. <a href="{{.Page.P}}/install#next">More</a></p>
   </div>
 </section>
 {{end}}

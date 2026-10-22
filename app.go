@@ -337,7 +337,7 @@ func (a *App) connector(lang Lang) http.HandlerFunc {
 			repo = strings.TrimSuffix(repo, "/") + "/tree/main/" + e.Path // каталог коннектора в монорепозитории
 		}
 		v := connectorView{Card: card, License: e.License, Repo: repo,
-			Page: newPage(lang, "/connectors/"+name, name+": "+lang.Tr().CatalogTitle, card.Description)}
+			Page: newPage(lang, "/connectors/"+name, card.Title+": "+lang.Tr().CatalogTitle, card.Description)}
 		for i := len(e.Versions) - 1; i >= 0; i-- {
 			ver := e.Versions[i].Version
 			revoked, reason := c.Index.IsRevoked(name, ver)

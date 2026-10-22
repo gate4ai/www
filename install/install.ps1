@@ -6,12 +6,19 @@
 #   $env:GATE4AI_VERSION = 'v0.1.1'   install a specific version (default: latest)
 #   $env:GATE4AI_INSTALL_DIR = 'DIR'  install folder (default: %LOCALAPPDATA%\Programs\gate4ai)
 #   $env:GATE4AI_NO_TRAY = '1'        do not install the tray icon app
-#   $env:GATE4AI_START = '1'          start the daemon now and at every login
-#                                     (gate4ai service install: HKCU Run key)
+#   $env:GATE4AI_NO_START = '1'       do not turn on the autostart. By default the
+#                                     installer runs gate4ai service install: the
+#                                     daemon starts now and at every login (HKCU Run
+#                                     key), the tray icon at every login.
+#                                     (GATE4AI_START=1 is accepted for compatibility;
+#                                     the autostart is on by default now.)
+#   $env:GATE4AI_NO_OPEN = '1'        do not open the Web UI after installing. By
+#                                     default, outside CI (CI not set), the installer
+#                                     runs gate4ai ui: the browser opens the setup
+#                                     wizard.
 #
 # Downloads the release from GitHub, checks sha256 checksums and only then
-# installs. Never touches your configuration or data, and starts the daemon
-# only with GATE4AI_START=1.
+# installs. Never touches your configuration or data.
 #
 # The whole script is one function called on the last line: a download cut
 # short by the network does not run half of it.
@@ -31,7 +38,8 @@ function Install-Gate4ai {
     $releases = "https://github.com/$repo/releases"
     $dir = if ($env:GATE4AI_INSTALL_DIR) { $env:GATE4AI_INSTALL_DIR } else { Join-Path $env:LOCALAPPDATA 'Programs\gate4ai' }
     $noTray = [bool]$env:GATE4AI_NO_TRAY
-    $start = [bool]$env:GATE4AI_START
+    $noStart = [bool]$env:GATE4AI_NO_START
+    $noOpen = [bool]$env:GATE4AI_NO_OPEN
 
     $arch = switch ($env:PROCESSOR_ARCHITECTURE) {
         'AMD64' { 'amd64' }
@@ -117,29 +125,50 @@ function Install-Gate4ai {
         Write-Host "Installed: $version"
         Write-Host "  $exe"
         if (-not $noTray) { Write-Host "  $(Join-Path $dir 'gate4ai-tray.exe')" }
-        $started = $false
-        if ($start) {
+        $running = $false
+        if ($noStart) {
+            # An update: a daemon that is already running keeps the old binary until it restarts.
+            # Windows PowerShell 5.1 turns redirected stderr of a program into errors: try/catch.
+            $wasRunning = $false
+            try { & $exe daemon status *> $null; $wasRunning = ($LASTEXITCODE -eq 0) } catch { $wasRunning = $false }
+            if ($wasRunning) {
+                $restarted = $false
+                try { & $exe daemon restart *> $null; $restarted = ($LASTEXITCODE -eq 0) } catch { $restarted = $false }
+                if ($restarted) {
+                    $running = $true
+                    Write-Host 'The running gate4ai daemon was restarted with the new version.'
+                } else {
+                    Write-Host 'Restart the running daemon to use the new version: gate4ai daemon restart'
+                }
+            }
+        } else {
+            # The autostart; it also restarts a daemon that is already running (an update).
             Write-Host ''
             $svcArgs = @('service', 'install')
             if ($noTray) { $svcArgs += '--no-tray' }
             & $exe @svcArgs | Out-Null
             if ($LASTEXITCODE -eq 0) {
-                $started = $true
+                $running = $true
                 Write-Host 'The gate4ai daemon is running and starts at every login (gate4ai service status).'
             } else {
-                Write-Host 'Could not set up the autostart; start the daemon yourself (below).'
+                Write-Host 'Could not set up the autostart: gate4ai ui starts the daemon for this session.'
             }
         }
 
+        # The Web UI shows the setup wizard: open it right away (Windows always has a desktop).
         Write-Host ''
-        Write-Host 'Next steps:'
-        if (-not $started) {
-            Write-Host '  gate4ai service install   # run the guard now and at every login'
-            Write-Host '                            # (or: gate4ai daemon start - until logout; gate4ai daemon - in this window)'
+        $opened = $false
+        if ($running -and -not $env:CI -and -not $noOpen) {
+            try {
+                & $exe ui
+                $opened = ($LASTEXITCODE -eq 0)
+            } catch { $opened = $false }
         }
-        Write-Host '  gate4ai ui                # open the Web UI (starts the guard if it is not running)'
-        if (-not $noTray -and -not $started) { Write-Host '  gate4ai-tray              # tray icon: status, Allow / Deny, Web UI (service install adds it to login)' }
-        Write-Host "First run guide: https://github.com/$repo#readme"
+        if ($opened) {
+            Write-Host 'The setup wizard is open in your browser. Open it again any time: gate4ai ui'
+        } else {
+            Write-Host 'Next: gate4ai ui   # opens the setup wizard in your browser'
+        }
     }
     finally {
         Remove-Item -LiteralPath $tmp -Recurse -Force -ErrorAction SilentlyContinue

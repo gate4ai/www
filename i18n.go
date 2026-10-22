@@ -111,11 +111,13 @@ type Tr struct {
 	InstallWhat          string
 	InstallWhatItems     []string
 	InstallVars          string
+	InstallVarsLead      string
 	InstallManual        string
 	InstallManualText    string
 	InstallSource        string
 	InstallNext          string
 	InstallNextText      string
+	InstallNextReadme    string
 	InstallLatest        string
 	CatalogTitle         string
 	CatalogLead          string
@@ -141,6 +143,10 @@ type Tr struct {
 	ConnectorInstall     string
 	ConnectorInstallLead string
 	ConnectorNative      string
+	ConnectorOpen        string
+	ConnectorOpenNote    string
+	ConnectorTechnical   string
+	ConnectorTechLead    string
 	ConnectorVersions    string
 	ConnectorRevoked     string
 	ConnectorLatest      string
@@ -195,14 +201,18 @@ var EnTr = Tr{
 		"Detects your OS and CPU and downloads the latest release from GitHub.",
 		"Checks sha256 checksums; with cosign installed, also checks the release signature. A tampered archive is not installed.",
 		"Puts gate4ai and the gate4ai-tray icon app into your user folder; no sudo.",
+		"Turns on the autostart: gate4.ai runs now and after every login, the tray icon too.",
+		"Opens the setup wizard in your browser when you install on a computer with a desktop.",
 		"Running it again updates gate4ai. Your rules, secrets and journal stay untouched.",
 	},
-	InstallVars:          "Options",
+	InstallVars:          "For administrators: installer options",
+	InstallVarsLead:      "Environment variables for the install command; the defaults suit most people.",
 	InstallManual:        "Manual install",
 	InstallManualText:    "Download an archive for your platform from GitHub Releases. Checksums are signed with cosign.",
 	InstallSource:        "Build from source (Go 1.27+):",
-	InstallNext:          "Next: first run",
-	InstallNextText:      "Start the daemon, install connectors and connect your agent. The README walks you through it in five steps.",
+	InstallNext:          "Next: run gate4ai ui",
+	InstallNextText:      "The setup wizard opens in your browser: connect an assistant, choose folders and sites, see the first approval. The installer opens it for you on a computer with a desktop; run this command to open it again.",
+	InstallNextReadme:    "Prefer the terminal? Read the README",
 	InstallLatest:        "Latest release",
 	CatalogTitle:         "Connectors",
 	CatalogLead:          "Email, files, browser: each connector declares exactly what it may touch. You see it before you install, and gate4ai enforces it.",
@@ -228,6 +238,10 @@ var EnTr = Tr{
 	ConnectorInstall:     "Install",
 	ConnectorInstallLead: "gate4ai shows these capabilities and asks for your consent before installing.",
 	ConnectorNative:      "A native package: a separate program without a sandbox, with your user's rights. The store accepts native packages only from gate4.ai.",
+	ConnectorOpen:        "Open in gate4.ai",
+	ConnectorOpenNote:    "if gate4.ai is running on this computer",
+	ConnectorTechnical:   "Technical",
+	ConnectorTechLead:    "Capabilities exactly as declared in the connector manifest.",
 	ConnectorVersions:    "Versions",
 	ConnectorRevoked:     "Revoked",
 	ConnectorLatest:      "latest",
@@ -262,14 +276,18 @@ var RuTr = Tr{
 		"Определяет ОС и процессор и скачивает последний релиз с GitHub.",
 		"Сверяет контрольные суммы sha256, а если установлен cosign, проверяет и подпись релиза. Подменённый архив не ставится.",
 		"Кладёт gate4ai и значок в трее gate4ai-tray в ваш пользовательский каталог, без sudo.",
+		"Включает автозапуск: gate4.ai работает сразу и после каждого входа в систему, значок в трее — тоже.",
+		"На компьютере с рабочим столом открывает в браузере мастер настройки.",
 		"Повторный запуск обновляет gate4ai. Правила, секреты и журнал не трогает.",
 	},
-	InstallVars:          "Параметры",
+	InstallVars:          "Для администраторов: параметры установщика",
+	InstallVarsLead:      "Переменные окружения для команды установки; большинству хватает умолчаний.",
 	InstallManual:        "Установка вручную",
 	InstallManualText:    "Скачайте архив для своей платформы с GitHub Releases. Контрольные суммы подписаны cosign.",
 	InstallSource:        "Из исходников (Go 1.27+):",
-	InstallNext:          "Дальше: первый запуск",
-	InstallNextText:      "Запустите daemon, поставьте коннекторы и подключите агента. README проводит через это за пять шагов.",
+	InstallNext:          "Дальше: запустите gate4ai ui",
+	InstallNextText:      "В браузере откроется мастер настройки: подключите ассистента, выберите папки и сайты, посмотрите на первое подтверждение. На компьютере с рабочим столом установщик откроет его сам; эта команда открывает его снова.",
+	InstallNextReadme:    "Удобнее в терминале? Читайте README",
 	InstallLatest:        "Последний релиз",
 	CatalogTitle:         "Коннекторы",
 	CatalogLead:          "Почта, файлы, браузер: каждый коннектор заранее объявляет, к чему он может прикоснуться. Вы видите это до установки, а gate4ai следит, чтобы он не вышел за эти рамки.",
@@ -295,6 +313,10 @@ var RuTr = Tr{
 	ConnectorInstall:     "Установка",
 	ConnectorInstallLead: "Перед установкой gate4ai покажет эти возможности и спросит согласие.",
 	ConnectorNative:      "Нативный пакет: отдельная программа без песочницы, с правами вашего пользователя. Магазин принимает нативные пакеты только от gate4.ai.",
+	ConnectorOpen:        "Открыть в gate4.ai",
+	ConnectorOpenNote:    "если gate4.ai запущен на этом компьютере",
+	ConnectorTechnical:   "Технически",
+	ConnectorTechLead:    "Возможности в точности как в манифесте коннектора.",
 	ConnectorVersions:    "Версии",
 	ConnectorRevoked:     "Отозвана",
 	ConnectorLatest:      "последняя",

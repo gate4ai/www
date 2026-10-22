@@ -181,6 +181,49 @@ func TestInstallCommandByOS(t *testing.T) {
 	}
 }
 
+// Следующий шаг после установки — gate4ai ui (мастер), параметры — под «Для администраторов».
+func TestInstallPageNextStep(t *testing.T) {
+	a := testApp(t, true)
+	for path, wants := range map[string][]string{
+		"/install":    {"Next: run gate4ai ui", "setup wizard opens in your browser", "For administrators"},
+		"/ru/install": {"Дальше: запустите gate4ai ui", "мастер настройки", "Для администраторов"},
+	} {
+		r := get(a, path)
+		wants = append(wants, `id="next"`, `data-copy="gate4ai ui"`, "#readme", "GATE4AI_NO_START=1", "GATE4AI_NO_OPEN=1", "GATE4AI_NO_TRAY=1")
+		for _, want := range wants {
+			if !strings.Contains(r.body, want) {
+				t.Errorf("%s: no %q", path, want)
+			}
+		}
+		d := strings.Index(r.body, `<details class="admin"`)
+		if d < 0 || strings.Index(r.body, "GATE4AI_VERSION") < d {
+			t.Errorf("%s: installer options inside the collapsed block", path)
+		}
+		if strings.Index(r.body, `id="next"`) > d {
+			t.Errorf("%s: the next step comes before the options", path)
+		}
+	}
+}
+
+// Лендинг: финальная подсказка — мастер, а не README; карточки агентов ведут к подключению.
+func TestLandingNextStep(t *testing.T) {
+	a := testApp(t, true)
+	for path, want := range map[string]string{"/?lang=en": "the setup wizard opens", "/ru/": "откроется мастер настройки"} {
+		r := get(a, path)
+		cta := r.body[strings.Index(r.body, `class="cta"`):]
+		cta = cta[:strings.Index(cta, "</section>")]
+		if !strings.Contains(cta, want) || !strings.Contains(cta, "<code>gate4ai ui</code>") || strings.Contains(cta, "README") {
+			t.Errorf("%s: final hint", path)
+		}
+		if strings.Count(r.body, `<a class="agent" href="`) != 4 || !strings.Contains(r.body, `/install#next"`) {
+			t.Errorf("%s: agent cards are links", path)
+		}
+	}
+	if !strings.Contains(get(a, "/ru/").body, `<a class="agent" href="/ru/install#next">`) {
+		t.Error("ru agent cards lead to the ru install page")
+	}
+}
+
 func TestScriptsAndLatest(t *testing.T) {
 	a := testApp(t, true)
 	r := get(a, "/install.sh")
@@ -191,9 +234,28 @@ func TestScriptsAndLatest(t *testing.T) {
 	if !strings.HasSuffix(strings.TrimRight(r.body, "\n"), `main "$@"`) {
 		t.Error("install.sh: the last line calls main")
 	}
+	// Автозапуск по умолчанию, отказ — GATE4AI_NO_START; мастер в браузере — gate4ai ui, отказ — GATE4AI_NO_OPEN.
+	for _, want := range []string{"GATE4AI_NO_START", "GATE4AI_NO_OPEN", "GATE4AI_START=1", "service install", `"$gate" ui`,
+		"WAYLAND_DISPLAY", "${CI:-}", "Next: gate4ai ui   # opens the setup wizard in your browser", "daemon restart"} {
+		if !strings.Contains(r.body, want) {
+			t.Errorf("install.sh: no %q", want)
+		}
+	}
+	if strings.Contains(r.body, "Next steps:") || strings.Contains(r.body, `START="${GATE4AI_START`) {
+		t.Error("install.sh: one next step, autostart without GATE4AI_START")
+	}
 	r = get(a, "/install.ps1")
 	if r.status != http.StatusOK || !strings.HasSuffix(strings.TrimRight(r.body, "\r\n"), "Install-Gate4ai") {
 		t.Error("install.ps1")
+	}
+	for _, want := range []string{"GATE4AI_NO_START", "GATE4AI_NO_OPEN", "GATE4AI_START=1", "service", "& $exe ui",
+		"$env:CI", "Next: gate4ai ui   # opens the setup wizard in your browser"} {
+		if !strings.Contains(r.body, want) {
+			t.Errorf("install.ps1: no %q", want)
+		}
+	}
+	if strings.Contains(r.body, "Next steps:") {
+		t.Error("install.ps1: one next step")
 	}
 	r = get(a, "/latest")
 	if r.status != http.StatusOK || r.body != "v0.1.1\n" || r.h.Get("Content-Type") != "text/plain; charset=utf-8" {
@@ -238,11 +300,21 @@ func TestCatalogPages(t *testing.T) {
 	if r.status != http.StatusOK {
 		t.Fatal(r.status)
 	}
-	for _, want := range []string{"gate4ai connectors install email", "Соединяется по TLS только с imap.host:imap.port",
-		"network tls://${setting:imap.host}", "<title>email: Коннекторы</title>", "Проверен"} {
+	for _, want := range []string{"gate4ai connectors install email", "Соединяется только с imap.host:imap.port и smtp.host:smtp.port",
+		"network tls://${setting:imap.host}", "<title>Почта: Коннекторы</title>", "Проверен",
+		`<h1 class="h1">Почта</h1>`, `<p class="connector-id mono">email</p>`, "Читает, ищет и отправляет письма",
+		`href="http://127.0.0.1:7431/connectors?install=email"`, "Открыть в gate4.ai", "если gate4.ai запущен на этом компьютере",
+		`<details class="tech">`, "Технически"} {
 		if !strings.Contains(r.body, want) {
 			t.Errorf("connector page: no %q", want)
 		}
+	}
+	// Каждая возможность — один раз человеческим языком; исходные строки — только под «Технически».
+	if strings.Count(r.body, "Соединяется") != 1 || strings.Count(r.body, "Пароли из") != 1 {
+		t.Error("capabilities are grouped")
+	}
+	if i := strings.Index(r.body, `<details class="tech">`); i < 0 || strings.Index(r.body, "network tcp://") < i {
+		t.Error("raw capabilities only inside the Technical block")
 	}
 	if !strings.Contains(r.body, `<span class="mono">v3</span>`) || strings.Index(r.body, "v3</span>") > strings.Index(r.body, "v2</span>") {
 		t.Error("versions, newest first")
@@ -306,8 +378,9 @@ func TestMiscRoutes(t *testing.T) {
 	if r := get(a, "/healthz"); r.status != http.StatusOK || r.body != "ok" {
 		t.Fatal(r)
 	}
-	if r := get(a, "/static/site.css"); r.status != http.StatusOK || r.h.Get("Content-Type") != "text/css; charset=utf-8" {
-		t.Fatal(r.status)
+	if r := get(a, "/static/site.css"); r.status != http.StatusOK || r.h.Get("Content-Type") != "text/css; charset=utf-8" ||
+		!strings.Contains(r.body, "@media print") {
+		t.Fatal("site.css: status and print styles without the reveal animation", r.status)
 	}
 	if r := get(a, "/static/site.js"); r.status != http.StatusOK || r.h.Get("Content-Type") != "text/javascript; charset=utf-8" {
 		t.Fatal(r.status)
