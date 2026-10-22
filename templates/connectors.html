@@ -1,0 +1,35 @@
+{{define "content"}}
+<section class="page-head">
+  <div class="wrap">
+    <h1 class="h1">{{.Page.T.CatalogTitle}}</h1>
+    <p class="lead narrow">{{.Page.T.CatalogLead}}</p>
+    <form class="search" method="get" action="{{.Page.P}}/connectors" role="search">
+      <label class="sr-only" for="q">{{.Page.T.CatalogSearch}}</label>
+      <input id="q" name="q" type="search" value="{{.Q}}" placeholder="{{.Page.T.CatalogSearch}}" autocomplete="off" data-filter>
+      {{if .Trust}}<input type="hidden" name="trust" value="{{.Trust}}">{{end}}
+      <button class="btn" type="submit">{{.Page.T.CatalogSearchButton}}</button>
+    </form>
+    <nav class="filters" aria-label="{{.Page.T.ConnectorTrust}}">
+      <a href="{{.Page.P}}/connectors{{if .Q}}?q={{.Q}}{{end}}"{{if not .Trust}} aria-current="page"{{end}}>{{.Page.T.CatalogAll}}</a>
+      {{range .Levels}}
+      <a href="{{$.Page.P}}/connectors?trust={{.}}{{if $.Q}}&amp;q={{$.Q}}{{end}}"{{if eq $.Trust .}} aria-current="page"{{end}}>{{$.Page.T.TrustName .}}</a>
+      {{end}}
+    </nav>
+  </div>
+</section>
+<section class="section section-tight">
+  <div class="wrap">
+    {{if not .Loaded}}
+    <p class="empty">{{.Page.T.CatalogUnavailable}}</p>
+    {{else if not .Cards}}
+    <p class="empty">{{.Page.T.CatalogEmpty}}</p>
+    {{else}}
+    <div class="cards" data-cards>
+      {{range .Cards}}{{template "card" withPage $.Page .}}{{end}}
+    </div>
+    <p class="empty" data-empty hidden>{{.Page.T.CatalogEmpty}}</p>
+    {{end}}
+    {{if .Loaded}}<p class="muted small catalog-foot">{{.Total}} {{.Page.T.CatalogCount}} · <a href="/connectors.json">{{.Page.T.CatalogJSON}}</a></p>{{end}}
+  </div>
+</section>
+{{end}}

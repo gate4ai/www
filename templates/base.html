@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="{{.Page.Lang.Code}}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{.Page.Title}}</title>
+<meta name="description" content="{{.Page.Description}}">
+<meta name="color-scheme" content="dark light">
+<meta property="og:title" content="{{.Page.Title}}">
+<meta property="og:description" content="{{.Page.Description}}">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://gate4.ai{{.Page.P}}{{.Page.Path}}">
+<link rel="canonical" href="https://gate4.ai{{if eq .Page.Path "/"}}{{.Page.P}}/{{else}}{{.Page.P}}{{.Page.Path}}{{end}}">
+<link rel="alternate" hreflang="en" href="https://gate4.ai{{.Page.Path}}">
+<link rel="alternate" hreflang="ru" href="https://gate4.ai/ru{{.Page.Path}}">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/static/site.css">
+<script src="/static/site.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">{{.Page.T.Skip}}</a>
+<header class="top">
+  <div class="wrap top-row">
+    <a class="brand" href="{{.Page.P}}/" aria-label="gate4.ai">
+      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><rect x="3" y="3" width="26" height="26" rx="8" fill="none" stroke="currentColor" stroke-width="2.5"/><path d="M11 9v14M21 9v14" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/><circle cx="16" cy="16" r="2.6" class="brand-dot"/></svg>
+      <span>gate4<span class="brand-ai">.ai</span></span>
+    </a>
+    <nav class="nav" aria-label="Main">
+      <a href="{{.Page.P}}/#how">{{.Page.T.NavHow}}</a>
+      <a href="{{.Page.P}}/#agents">{{.Page.T.NavAgents}}</a>
+      <a href="{{.Page.P}}/connectors">{{.Page.T.NavConnectors}}</a>
+      <a href="{{.Page.GitHub}}#readme">{{.Page.T.NavDocs}}</a>
+      <a class="lang" href="{{.Page.OtherLangHref}}" hreflang="{{.Page.OtherLangCode}}" lang="{{.Page.OtherLangCode}}">{{.Page.T.OtherLangName}}</a>
+      <a class="btn btn-sm" href="{{.Page.P}}/install">{{.Page.T.NavInstall}}</a>
+    </nav>
+  </div>
+</header>
+<main id="main">
+{{block "content" .}}{{end}}
+</main>
+<footer class="foot">
+  <div class="wrap foot-grid">
+    <div>
+      <a class="brand" href="{{.Page.P}}/"><span>gate4<span class="brand-ai">.ai</span></span></a>
+      <p class="muted">{{.Page.T.FooterTagline}}</p>
+      <p class="muted small">{{.Page.T.FooterPrivacy}}</p>
+    </div>
+    <div>
+      <h2 class="foot-h">{{.Page.T.FooterProduct}}</h2>
+      <ul class="foot-list">
+        <li><a href="{{.Page.P}}/install">{{.Page.T.NavInstall}}</a></li>
+        <li><a href="{{.Page.P}}/connectors">{{.Page.T.NavConnectors}}</a></li>
+        <li><a href="{{.Page.GitHub}}/releases">Releases</a></li>
+      </ul>
+    </div>
+    <div>
+      <h2 class="foot-h">{{.Page.T.FooterDocs}}</h2>
+      <ul class="foot-list">
+        <li><a href="{{.Page.GitHub}}#readme">README</a></li>
+        <li><a href="{{.Page.GitHub}}/blob/main/docs/specification.md">{{.Page.T.FooterSpec}}</a></li>
+        <li><a href="{{.Page.GitHub}}/security/policy">{{.Page.T.FooterSecurity}}</a></li>
+        <li><a href="https://github.com/gate4ai">GitHub</a></li>
+      </ul>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

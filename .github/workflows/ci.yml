@@ -1,0 +1,140 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  go:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: false
+      # Кэш Go с запасным ключом: после смены go.sum (обновление gate4ai при деплое)
+      # сборка начинается с прошлого кэша, а не с нуля, как у кэша setup-go.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: go-${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: go-${{ runner.os }}-go-
+      - name: gofmt
+        run: |
+          out=$(gofmt -l .)
+          [ -z "$out" ] || { echo "not gofmt-ed:"; echo "$out"; exit 1; }
+      - run: go vet ./...
+      - run: go test ./...
+      - run: CGO_ENABLED=0 go build -trimpath -o gate4ai-www .
+      - name: Page budget (< 100 KB without images)
+        run: |
+          ./gate4ai-www & pid=$!
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8080/healthz && break; sleep 1; done
+          # The catalog comes from the signed registry: wait for it, so /connectors has cards.
+          for i in $(seq 1 30); do curl -fsS -o /dev/null http://127.0.0.1:8080/connectors.json && break; sleep 1; done
+          css=$(curl -fsS http://127.0.0.1:8080/static/site.css | wc -c)
+          js=$(curl -fsS http://127.0.0.1:8080/static/site.js | wc -c)
+          for p in /?lang=en /ru/ /install /connectors /connectors/email; do
+            html=$(curl -fsS "http://127.0.0.1:8080$p" | wc -c)
+            total=$((html + css + js)); echo "$p: $total bytes"
+            [ "$total" -lt 100000 ]
+          done
+          kill $pid
+
+  shellcheck:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: shellcheck -s sh install/install.sh deploy/deploy.sh
+
+  psscriptanalyzer:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - shell: pwsh
+        run: |
+          Install-Module PSScriptAnalyzer -Force -Scope CurrentUser
+          $r = Invoke-ScriptAnalyzer -Path install/install.ps1 -Severity Warning,Error -ExcludeRule PSAvoidUsingWriteHost
+          $r | Format-Table -AutoSize
+          if ($r) { exit 1 }
+
+  image:
+    # ghcr.io/gate4ai/www:<sha> — only from main.
+    needs: [go, shellcheck, psscriptanalyzer]
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          push: true
+          tags: ghcr.io/gate4ai/www:${{ github.sha }}
+          build-args: VERSION=${{ github.sha }}
+
+  deploy:
+    # Deploys only when the server is configured: vars.DEPLOY_HOST and secrets
+    # DEPLOY_SSH_KEY, DEPLOY_KNOWN_HOSTS (see README, "Deploy").
+    needs: [image]
+    if: vars.DEPLOY_HOST != ''
+    runs-on: ubuntu-24.04
+    environment: production
+    permissions:
+      contents: read
+      packages: read
+    concurrency:
+      group: deploy
+      cancel-in-progress: false
+    env:
+      HOST: ${{ vars.DEPLOY_HOST }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: SSH
+        env:
+          KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$KEY" > ~/.ssh/id_deploy && chmod 600 ~/.ssh/id_deploy
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          printf 'Host deploy\n  HostName %s\n  User root\n  IdentityFile ~/.ssh/id_deploy\n  StrictHostKeyChecking yes\n  BatchMode yes\n' "$HOST" > ~/.ssh/config
+      - name: docker compose pull && up -d
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ssh deploy 'install -d -m 0755 /opt/gate4ai-www'
+          scp deploy/compose.yaml deploy:/opt/gate4ai-www/compose.yaml
+          printf '%s' "$TOKEN" | ssh deploy 'docker login ghcr.io -u "${{ github.actor }}" --password-stdin >/dev/null'
+          status=0
+          ssh deploy 'sh -s -- up ${{ github.sha }}' < deploy/deploy.sh || status=$?
+          ssh deploy 'docker logout ghcr.io >/dev/null' || true
+          exit $status
+      - name: https://gate4.ai/healthz, else the previous image
+        run: |
+          for i in $(seq 1 12); do
+            if curl -fsS --max-time 10 https://gate4.ai/healthz; then exit 0; fi
+            sleep 5
+          done
+          echo "::error::https://gate4.ai/healthz does not answer; rolling back to the previous image"
+          ssh deploy 'sh -s -- rollback' < deploy/deploy.sh
+          exit 1

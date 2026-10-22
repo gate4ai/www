@@ -1,0 +1,182 @@
+{{define "content"}}
+<section class="hero" id="install">
+  <div class="wrap hero-grid">
+    <div class="hero-copy">
+      <p class="eyebrow"><span class="eyebrow-dot" aria-hidden="true"></span>Открытый код · работает на вашем компьютере</p>
+      <h1 class="display">AI-агенты получают <em>только</em> то, что вы разрешили.</h1>
+      <p class="lead">gate4.ai — страж для вашего компьютера. Claude, ChatGPT, OpenClaw и Hermes получают доступ к почте, файлам и браузеру через него и по вашим правилам: разрешить, запретить или сначала спросить вас. Пароли агенты не видят, а у каждого действия есть доказательство.</p>
+      {{template "cmd" .}}
+      <p class="hero-meta">macOS, Linux, Windows · без прав администратора{{if .Latest}} · <a href="{{.Page.GitHub}}/releases/latest">{{.Latest}}</a>{{end}}</p>
+    </div>
+    <figure class="demo" aria-label="Пример: агент хочет отправить письмо, gate4.ai спрашивает вас, вы разрешаете">
+      <div class="demo-bar"><span class="demo-dots" aria-hidden="true"><i></i><i></i><i></i></span><span>gate4ai · журнал</span></div>
+      <ol class="demo-steps">
+        <li class="step s1">
+          <span class="step-k">Агент</span>
+          <div><strong>Claude.ai</strong> хочет <code>email.send</code><br><span class="muted">landlord@example.com · «Аренда за октябрь»</span></div>
+        </li>
+        <li class="step s2">
+          <span class="step-k">Правило</span>
+          <div><code>email-send-trusted</code>: адресата нет в доверенных контактах <span class="pill pill-ask">спросить</span></div>
+        </li>
+        <li class="step s3">
+          <span class="step-k">Вы</span>
+          <div class="notify">
+            <span class="notify-src">Telegram · gate4ai</span>
+            <span>Claude.ai хочет написать landlord@example.com</span>
+            <span class="notify-btns"><span class="nb">Отклонить</span><span class="nb nb-yes">Разрешить</span></span>
+          </div>
+        </li>
+        <li class="step s4">
+          <span class="step-k">Итог</span>
+          <div><span class="pill pill-allow">отправлено</span> SMTP 250 OK · в журнале <code>#1842</code></div>
+        </li>
+      </ol>
+    </figure>
+  </div>
+</section>
+
+<section class="band" id="problem">
+  <div class="wrap">
+    <h2 class="h2 narrow">Агентам отдают ключи от всего. Одного вредного письма хватает, чтобы это стало действиями.</h2>
+    <ol class="problems">
+      <li><span class="num">01</span><h3>Слишком много доступа</h3><p>Персональный агент получает весь shell, залогиненный браузер и почту целиком. Нельзя сказать «только это и не больше стольких».</p></li>
+      <li><span class="num">02</span><h3>Prompt injection становится действием</h3><p>Страница или письмо со скрытой инструкцией может заставить агента переслать ваши данные или заплатить кому-то.</p></li>
+      <li><span class="num">03</span><h3>«Сделано» без доказательств</h3><p>Агенты сообщают об успехе, которого не было. Без ответа сервера или скриншота это не проверить.</p></li>
+    </ol>
+  </div>
+</section>
+
+<section class="section" id="how">
+  <div class="wrap">
+    <p class="kicker">Как работает</p>
+    <h2 class="h2">Один шлюз между всеми агентами и вашим компьютером.</h2>
+    <div class="flow" aria-label="Агент, затем gate4.ai с вашими правилами, затем коннектор">
+      <div class="flow-node"><span class="flow-k">Ваши агенты</span><span>Claude.ai · ChatGPT · Claude Code · OpenClaw · Hermes</span></div>
+      <div class="flow-arrow" aria-hidden="true"></div>
+      <div class="flow-node flow-gate">
+        <span class="flow-k">gate4.ai</span>
+        <span class="flow-effects"><span class="pill pill-allow">разрешить</span><span class="pill pill-deny">запретить</span><span class="pill pill-ask">спросить</span></span>
+        <span class="muted small">правила · лимиты · хранилище · журнал</span>
+      </div>
+      <div class="flow-arrow" aria-hidden="true"></div>
+      <div class="flow-node"><span class="flow-k">Коннекторы</span><span>Почта · Файлы · Браузер</span></div>
+    </div>
+    <div class="features">
+      <div class="feature">
+        <h3>Правила для каждого агента</h3>
+        <p>Кто, что, кому и сколько. У каждого агента свой токен и профиль, а правила одни на всех.</p>
+      </div>
+      <div class="feature">
+        <h3>Пароли остаются у вас</h3>
+        <p>Агенты и коннекторы видят только алиасы вроде <code>@mail.work</code>. Секрет подставляет сам gate4ai и только для своего сервера.</p>
+      </div>
+      <div class="feature">
+        <h3>Доказательство каждого действия</h3>
+        <p>Запрос, решение и результат попадают в журнал, который нельзя незаметно изменить. <code>gate4ai journal verify</code> проверяет его целиком.</p>
+      </div>
+      <div class="feature">
+        <h3>Подтверждение откуда угодно</h3>
+        <p>Уведомление и значок в трее, Telegram или локальный Web UI. Не ответили вовремя — значит, нет.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section section-alt" id="rules">
+  <div class="wrap">
+    <p class="kicker">Правила простыми словами</p>
+    <h2 class="h2">Скажите, что можно. Остальное gate4ai не пропустит.</h2>
+    <div class="rules">
+      <article class="rule">
+        <div class="rule-say">
+          <h3>«Писать бухгалтеру — сразу. Всем остальным — только спросив меня».</h3>
+          <p class="muted">Письма доверенным контактам уходят сразу, остальные ждут вашего решения.</p>
+        </div>
+<pre class="code"><code><span class="c-k">- id:</span> email-accountant
+  <span class="c-k">action:</span> email.send
+  <span class="c-k">when:</span> to.all(r, r in lists.contacts_trusted)
+  <span class="c-k">effect:</span> <span class="c-allow">allow</span>
+<span class="c-k">- id:</span> email-others
+  <span class="c-k">action:</span> email.send
+  <span class="c-k">effect:</span> <span class="c-ask">ask</span></code></pre>
+      </article>
+      <article class="rule">
+        <div class="rule-say">
+          <h3>«Читать заметки можно. Менять — только после моего “да” в Telegram».</h3>
+          <p class="muted">Чтение проходит молча, каждая правка приходит сообщением с кнопками.</p>
+        </div>
+<pre class="code"><code><span class="c-k">- id:</span> notes-read
+  <span class="c-k">action:</span> files.read
+  <span class="c-k">when:</span> glob(path, "~/Documents/notes/**")
+  <span class="c-k">effect:</span> <span class="c-allow">allow</span>
+<span class="c-k">- id:</span> notes-append
+  <span class="c-k">action:</span> files.append
+  <span class="c-k">when:</span> glob(path, "~/Documents/notes/**")
+  <span class="c-k">effect:</span> <span class="c-ask">ask</span></code></pre>
+      </article>
+      <article class="rule">
+        <div class="rule-say">
+          <h3>«Никогда не писать на адрес, найденный во входящем письме. И не больше 20 писем в день».</h3>
+          <p class="muted">gate4ai помнит, откуда взялся каждый аргумент, поэтому подброшенный адрес не пройдёт.</p>
+        </div>
+<pre class="code"><code><span class="c-k">- id:</span> no-injected-recipients
+  <span class="c-k">action:</span> email.send
+  <span class="c-k">when:</span> "'untrusted_content' in provenance.to"
+  <span class="c-k">effect:</span> <span class="c-deny">deny</span>
+<span class="c-k">limits:</span>
+  - { id: mail-per-day, action: email.send, per_day: 20 }</code></pre>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="agents">
+  <div class="wrap">
+    <p class="kicker">Работает с вашими агентами</p>
+    <h2 class="h2">Облачные и локальные — по одним правилам.</h2>
+    <div class="agents">
+      <a class="agent" href="{{.Page.P}}/install#next"><h3>Claude.ai</h3><p>Remote MCP через relay. Порты открывать не нужно, а relay не может прочитать ваш трафик.</p><span class="agent-more">Как подключить</span></a>
+      <a class="agent" href="{{.Page.P}}/install#next"><h3>ChatGPT</h3><p>Тот же remote MCP-коннектор, подключается одноразовым кодом.</p><span class="agent-more">Как подключить</span></a>
+      <a class="agent" href="{{.Page.P}}/install#next"><h3>Claude Code</h3><p>MCP по stdio или полная изоляция через <code>gate4ai run</code>: сеть и файлы только через gate4ai.</p><span class="agent-more">Как подключить</span></a>
+      <a class="agent" href="{{.Page.P}}/install#next"><h3>OpenClaw · Hermes</h3><p>CLI и готовый skill: <code>gate4ai skill &gt; SKILL.md</code>.</p><span class="agent-more">Как подключить</span></a>
+    </div>
+  </div>
+</section>
+
+{{if .Cards}}
+<section class="section section-alt" id="connectors">
+  <div class="wrap">
+    <p class="kicker">Коннекторы</p>
+    <div class="section-head">
+      <h2 class="h2">Каждый коннектор заранее объявляет, к чему прикоснётся.</h2>
+      <a class="link-arrow" href="{{.Page.P}}/connectors">Все коннекторы</a>
+    </div>
+    <div class="cards">
+      {{range .Cards}}{{template "card" withPage $.Page .}}{{end}}
+    </div>
+  </div>
+</section>
+{{end}}
+
+<section class="section" id="trust">
+  <div class="wrap">
+    <p class="kicker">Можно проверить</p>
+    <h2 class="h2">Нам не нужно верить на слово. Всё можно проверить.</h2>
+    <ul class="trust">
+      <li><h3>Открытый код</h3><p>Ядро, relay, SDK и коннекторы — на <a href="https://github.com/gate4ai">GitHub</a>. Ядро, relay и коннекторы — под AGPL-3.0, SDK — под Apache-2.0.</p></li>
+      <li><h3>Подписанные релизы</h3><p>Контрольные суммы подписаны cosign; подменённый архив установщик не поставит.</p></li>
+      <li><h3>Подписанные коннекторы</h3><p>Пакеты подписывает издатель, индекс магазина — gate4.ai. Отозванные версии не ставятся.</p></li>
+      <li><h3>Всё у вас</h3><p>Ни аккаунта, ни облака. Правила, секреты и журнал остаются на вашем компьютере; relay необязателен.</p></li>
+    </ul>
+  </div>
+</section>
+
+<section class="cta">
+  <div class="wrap cta-inner">
+    <h2 class="h2">Поставьте стража на своих агентов за минуту.</h2>
+    {{template "cmd" .}}
+    <p class="muted">Затем <code>gate4ai ui</code>: в браузере откроется мастер настройки — подключит агента, папки и сайты. На компьютере с рабочим столом установщик откроет его сам. <a href="{{.Page.P}}/install#next">Подробнее</a></p>
+  </div>
+</section>
+{{end}}
