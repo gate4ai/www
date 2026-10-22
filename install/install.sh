@@ -11,7 +11,8 @@
 #                             (gate4ai service install: systemd --user / launchd)
 #
 # Downloads the release from GitHub, checks sha256 checksums (and the cosign
-# signature when cosign is installed) and only then installs. Never calls sudo,
+# signature when cosign is installed: made by release.yml of gate4ai/gate4ai
+# on a v* tag) and only then installs. Never calls sudo,
 # never touches your configuration or data, and starts the daemon only with
 # GATE4AI_START=1.
 #
@@ -57,11 +58,30 @@ main() {
   if command -v curl >/dev/null 2>&1; then
     fetch() { curl -fsSL --proto "$proto" --tlsv1.2 --retry 3 -o "$2" "$1"; }
     fetch_text() { curl -fsSL --retry 2 --max-time 15 "$1"; }
-  elif command -v wget >/dev/null 2>&1; then
-    fetch() { wget -q -O "$2" "$1"; }
+  elif wget --version 2>/dev/null | grep -q 'GNU Wget'; then
+    # The same rules as curl: TLS 1.2 or newer and HTTPS only. wget has no option
+    # against a redirect to http (--https-only is for recursive mode), so the
+    # redirects are read from the response headers (-S) and such a download is
+    # thrown away; nothing is installed yet at that point. BusyBox wget has no
+    # such options, so it is not used.
+    fetch() {
+      if [ "$proto" = '=https' ]; then
+        case "$1" in https://*) ;; *) return 1 ;; esac
+      fi
+      wget -q -S --secure-protocol=TLSv1_2 --tries=3 -O "$2" "$1" 2>"$2.hdr" || {
+        rm -f "$2.hdr"
+        return 1
+      }
+      if [ "$proto" = '=https' ] && grep -qi '^[[:space:]]*Location:[[:space:]]*http:' "$2.hdr"; then
+        rm -f "$2" "$2.hdr"
+        printf 'gate4ai install: %s redirects to plain http\n' "$1" >&2
+        return 1
+      fi
+      rm -f "$2.hdr"
+    }
     fetch_text() { wget -q -T 15 -O - "$1"; }
   else
-    fail "curl or wget is required"
+    fail "curl (or GNU wget) is required"
   fi
   if command -v sha256sum >/dev/null 2>&1; then
     sha256() { sha256sum "$1" | awk '{print $1}'; }
@@ -111,7 +131,7 @@ main() {
       fetch "$DOWNLOAD_BASE/$tag/$1.pem" "$tmp/$1.pem" || fail "cannot download $1.pem"
       cosign verify-blob \
         --certificate "$tmp/$1.pem" --signature "$tmp/$1.sig" \
-        --certificate-identity-regexp "^https://github.com/$REPO/" \
+        --certificate-identity-regexp "^https://github.com/$REPO/\.github/workflows/release\.yml@refs/tags/v" \
         --certificate-oidc-issuer https://token.actions.githubusercontent.com \
         "$tmp/$1" >/dev/null 2>&1 || fail "signature of $1 is NOT valid; nothing was installed"
       say "  signature of $1: ok (cosign)"
