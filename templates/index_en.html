@@ -13,17 +13,17 @@
       <ol class="demo-steps">
         <li class="step s1">
           <span class="step-k">Agent</span>
-          <div><strong>Claude.ai</strong> wants <code>browser.act</code><br><span class="muted">lk.example.org · “Pay the October utility bill”</span></div>
+          <div><strong>Claude.ai</strong> wants <code>browser.act</code><br><span class="muted">account.example.org · “Pay the October utility bill”</span></div>
         </li>
         <li class="step s2">
           <span class="step-k">Sites</span>
-          <div><code>lk.example.org</code> is not on your list of allowed sites <span class="pill pill-ask">ask</span></div>
+          <div><code>account.example.org</code> is not on your list of allowed sites <span class="pill pill-ask">ask</span></div>
         </li>
         <li class="step s3">
           <span class="step-k">You</span>
           <div class="notify">
             <span class="notify-src">Telegram · gate4ai</span>
-            <span>Claude.ai wants to act on lk.example.org</span>
+            <span>Claude.ai wants to act on account.example.org</span>
             <span class="notify-btns"><span class="nb">Deny</span><span class="nb">Add to allowed sites</span><span class="nb nb-yes">Allow</span></span>
           </div>
         </li>
@@ -96,7 +96,7 @@
 <pre class="code"><code><span class="c-k">access:</span>
   <span class="c-k">sites:</span>
     - { domain: "*.bank.example", access: <span class="c-allow">read</span> }
-    - { domain: "lk.example.org", access: <span class="c-ask">ask</span> }
+    - { domain: "account.example.org", access: <span class="c-ask">ask</span> }
     - { domain: "*", access: <span class="c-deny">deny</span> }</code></pre>
       </article>
       <article class="rule">

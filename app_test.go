@@ -320,9 +320,9 @@ func TestCatalogPages(t *testing.T) {
 		t.Fatal(r.status)
 	}
 	for _, want := range []string{"gate4ai connectors install receipts",
-		"Ходит на сайты только через ваш Браузер и только на lk.example.org (read) и *.pay.example (read)",
+		"Ходит на сайты только через ваш Браузер и только на account.example.org (read) и *.pay.example (read)",
 		"Работает с файлами только через ваши Файлы и только в folder (append)",
-		"site lk.example.org: read", "<title>receipts: Коннекторы</title>", "Проверен",
+		"site account.example.org: read", "<title>receipts: Коннекторы</title>", "Проверен",
 		`<h1 class="h1">receipts</h1>`, "Downloads utility receipts",
 		`href="http://127.0.0.1:7431/connectors?install=receipts"`, "Открыть в gate4.ai", "если gate4.ai запущен на этом компьютере",
 		`<details class="tech">`, "Технически"} {
@@ -337,7 +337,7 @@ func TestCatalogPages(t *testing.T) {
 	if strings.Count(r.body, "Ходит на сайты") != 1 || strings.Count(r.body, "Работает с файлами") != 1 {
 		t.Error("capabilities are grouped")
 	}
-	if i := strings.Index(r.body, `<details class="tech">`); i < 0 || strings.Index(r.body, "site lk.example.org: read") < i {
+	if i := strings.Index(r.body, `<details class="tech">`); i < 0 || strings.Index(r.body, "site account.example.org: read") < i {
 		t.Error("raw capabilities only inside the Technical block")
 	}
 	if !strings.Contains(r.body, `<span class="mono">v3</span>`) || strings.Index(r.body, "v3</span>") > strings.Index(r.body, "v2</span>") {
