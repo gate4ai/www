@@ -10,24 +10,32 @@ import (
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/gate4ai/gate4ai/sdk-go/registry"
 )
 
-func testdata(t *testing.T) ([]byte, string) {
+// testdata — индекс-образец, подписанный на ходу ключом теста: (индекс, подпись, открытый ключ).
+// Ключ registry у тестов нет, поэтому образец не подписывается заранее.
+func testdata(t *testing.T) ([]byte, string, string) {
 	t.Helper()
 	raw, err := os.ReadFile("testdata/index.json")
 	if err != nil {
 		t.Fatal(err)
 	}
-	sig, err := os.ReadFile("testdata/index.json.sig")
+	pub, priv, err := registry.GenerateKey()
 	if err != nil {
 		t.Fatal(err)
 	}
-	return raw, string(sig)
+	sig, err := registry.SignIndex(raw, priv)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return raw, sig, pub
 }
 
 func testCatalog(t *testing.T) *Catalog {
 	t.Helper()
-	raw, sig := testdata(t)
+	raw, sig, key := testdata(t)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasSuffix(r.URL.Path, ".sig") {
 			_, _ = io.WriteString(w, sig)
@@ -36,7 +44,7 @@ func testCatalog(t *testing.T) *Catalog {
 		_, _ = w.Write(raw)
 	}))
 	defer srv.Close()
-	c, err := NewSources(srv.URL+"/index.json", []string{DefaultRegistryKey}, DefaultReleasesRepo).FetchCatalog(context.Background())
+	c, err := NewSources(srv.URL+"/index.json", []string{key}, DefaultReleasesRepo).FetchCatalog(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -94,7 +102,8 @@ func TestHomePages(t *testing.T) {
 		t.Fatal(r.h.Get("Content-Type"))
 	}
 	for _, want := range []string{"only</em> what you allow", "curl -fsSL https://gate4.ai/install.sh | sh",
-		"/connectors/email", "v0.1.1", `<html lang="en">`, `href="/ru/"`} {
+		"/connectors/pagereader", "v0.1.1", `<html lang="en">`, `href="/ru/"`, "Browser · Files · connectors to sites", "browser.act", "Add to allowed sites",
+		`domain: "*.bank.example", access: <span class="c-allow">read</span>`, "access:", "folders:"} {
 		if !strings.Contains(r.body, want) {
 			t.Errorf("home: no %q", want)
 		}
@@ -119,7 +128,7 @@ func TestHomePages(t *testing.T) {
 func TestPageBudget(t *testing.T) {
 	a := testApp(t, true)
 	assets := len(get(a, "/static/site.css").body) + len(get(a, "/static/site.js").body)
-	for _, p := range []string{"/?lang=en", "/ru/", "/install", "/ru/install", "/connectors", "/connectors/email", "/ru/connectors/browser"} {
+	for _, p := range []string{"/?lang=en", "/ru/", "/install", "/ru/install", "/connectors", "/connectors/pagereader", "/ru/connectors/utilities"} {
 		r := get(a, p)
 		if r.status != http.StatusOK {
 			t.Fatalf("%s: %d", p, r.status)
@@ -273,7 +282,7 @@ func TestCatalogPages(t *testing.T) {
 	if r.status != http.StatusOK {
 		t.Fatal(r.status)
 	}
-	for _, name := range []string{"browser", "email", "files"} {
+	for _, name := range []string{"pagereader", "receipts", "utilities"} {
 		if !strings.Contains(r.body, "/connectors/"+name+`"`) {
 			t.Error(name)
 		}
@@ -281,39 +290,52 @@ func TestCatalogPages(t *testing.T) {
 	if !strings.Contains(r.body, "3 connectors from the signed registry") {
 		t.Error("count")
 	}
-	r = get(a, "/connectors?q=imap")
-	if !strings.Contains(r.body, `/connectors/email"`) || strings.Contains(r.body, `/connectors/files"`) {
+	// Браузер и Файлы встроены: на странице каталога без фильтра, не карточками и не ссылками.
+	if !strings.Contains(r.body, "Built into gate4ai") || !strings.Contains(r.body, `<span class="card-name">Browser</span>`) ||
+		!strings.Contains(r.body, `<span class="card-name">Files</span>`) || strings.Contains(r.body, `/connectors/browser"`) {
+		t.Error("built-in Browser and Files")
+	}
+	if strings.Count(r.body, `class="card"`) != 3 {
+		t.Error("built-ins are not cards")
+	}
+	r = get(a, "/connectors?q=receipt")
+	if !strings.Contains(r.body, `/connectors/receipts"`) || strings.Contains(r.body, `/connectors/pagereader"`) || strings.Contains(r.body, "Built into gate4ai") {
 		t.Error("search")
 	}
-	if !strings.Contains(r.body, `href="/connectors?trust=verified&amp;q=imap"`) {
+	if !strings.Contains(r.body, `href="/connectors?trust=verified&amp;q=receipt"`) {
 		t.Error("filters keep the query")
 	}
 	r = get(a, "/connectors?trust=community")
-	if strings.Contains(r.body, `/connectors/email"`) || !strings.Contains(r.body, "Nothing found") {
+	if strings.Contains(r.body, `/connectors/receipts"`) || !strings.Contains(r.body, "Nothing found") {
 		t.Error("trust filter")
 	}
-	if r := get(a, "/connectors?trust=bogus"); !strings.Contains(r.body, `/connectors/email"`) {
+	if r := get(a, "/connectors?trust=bogus"); !strings.Contains(r.body, `/connectors/receipts"`) {
 		t.Error("unknown trust level is ignored")
 	}
 
-	r = get(a, "/ru/connectors/email")
+	r = get(a, "/ru/connectors/receipts")
 	if r.status != http.StatusOK {
 		t.Fatal(r.status)
 	}
-	for _, want := range []string{"gate4ai connectors install email", "Соединяется только с imap.host:imap.port и smtp.host:smtp.port",
-		"network tls://${setting:imap.host}", "<title>Почта: Коннекторы</title>", "Проверен",
-		`<h1 class="h1">Почта</h1>`, `<p class="connector-id mono">email</p>`, "Читает, ищет и отправляет письма",
-		`href="http://127.0.0.1:7431/connectors?install=email"`, "Открыть в gate4.ai", "если gate4.ai запущен на этом компьютере",
+	for _, want := range []string{"gate4ai connectors install receipts",
+		"Ходит на сайты только через ваш Браузер и только на lk.example.org (read) и *.pay.example (read)",
+		"Работает с файлами только через ваши Файлы и только в folder (append)",
+		"site lk.example.org: read", "<title>receipts: Коннекторы</title>", "Проверен",
+		`<h1 class="h1">receipts</h1>`, "Downloads utility receipts",
+		`href="http://127.0.0.1:7431/connectors?install=receipts"`, "Открыть в gate4.ai", "если gate4.ai запущен на этом компьютере",
 		`<details class="tech">`, "Технически"} {
 		if !strings.Contains(r.body, want) {
 			t.Errorf("connector page: no %q", want)
 		}
 	}
+	if strings.Contains(r.body, `<p class="connector-id mono">`) {
+		t.Error("id equals the title: shown once")
+	}
 	// Каждая возможность — один раз человеческим языком; исходные строки — только под «Технически».
-	if strings.Count(r.body, "Соединяется") != 1 || strings.Count(r.body, "Пароли из") != 1 {
+	if strings.Count(r.body, "Ходит на сайты") != 1 || strings.Count(r.body, "Работает с файлами") != 1 {
 		t.Error("capabilities are grouped")
 	}
-	if i := strings.Index(r.body, `<details class="tech">`); i < 0 || strings.Index(r.body, "network tcp://") < i {
+	if i := strings.Index(r.body, `<details class="tech">`); i < 0 || strings.Index(r.body, "site lk.example.org: read") < i {
 		t.Error("raw capabilities only inside the Technical block")
 	}
 	if !strings.Contains(r.body, `<span class="mono">v3</span>`) || strings.Index(r.body, "v3</span>") > strings.Index(r.body, "v2</span>") {
@@ -323,7 +345,7 @@ func TestCatalogPages(t *testing.T) {
 	if r := get(a, "/connectors/nope"); r.status != http.StatusNotFound {
 		t.Fatal(r.status)
 	}
-	raw, _ := testdata(t)
+	raw, _, _ := testdata(t)
 	r = get(a, "/connectors.json")
 	if r.status != http.StatusOK || r.body != string(raw) || r.h.Get("Content-Type") != "application/json" {
 		t.Fatal("connectors.json")
@@ -336,7 +358,7 @@ func TestCatalogPages(t *testing.T) {
 	if r := get(empty, "/connectors.json"); r.status != http.StatusServiceUnavailable {
 		t.Fatal(r.status)
 	}
-	if r := get(empty, "/connectors/email"); r.status != http.StatusNotFound {
+	if r := get(empty, "/connectors/receipts"); r.status != http.StatusNotFound {
 		t.Fatal(r.status)
 	}
 }
@@ -344,8 +366,8 @@ func TestCatalogPages(t *testing.T) {
 func TestRevokedVersion(t *testing.T) {
 	a := testApp(t, true)
 	c := a.Catalog()
-	c.Index.Revoked = append(c.Index.Revoked, revocation("email", "3", "leaks data"))
-	r := get(a, "/connectors/email")
+	c.Index.Revoked = append(c.Index.Revoked, revocation("receipts", "3", "leaks data"))
+	r := get(a, "/connectors/receipts")
 	if !strings.Contains(r.body, `class="is-revoked"`) || !strings.Contains(r.body, "leaks data") {
 		t.Error("revoked version with its reason")
 	}
@@ -358,10 +380,7 @@ func TestRevokedVersion(t *testing.T) {
 // Коннектор в монорепозитории (path): «Исходник» ведёт в его каталог.
 func TestConnectorRepoPath(t *testing.T) {
 	a := testApp(t, true)
-	e := a.Catalog().Index.Connectors["email"]
-	e.Repo, e.Path = "https://github.com/gate4ai/gate4ai", "connectors/mail"
-	a.Catalog().Index.Connectors["email"] = e
-	if r := get(a, "/connectors/email"); !strings.Contains(r.body, `href="https://github.com/gate4ai/gate4ai/tree/main/connectors/mail"`) {
+	if r := get(a, "/connectors/pagereader"); !strings.Contains(r.body, `href="https://github.com/gate4ai/gate4ai/tree/main/e2e/testdata/pagereader"`) {
 		t.Error("source link to the connector folder")
 	}
 }
@@ -392,7 +411,7 @@ func TestMiscRoutes(t *testing.T) {
 		t.Fatal(r.body)
 	}
 	r := get(a, "/sitemap.xml")
-	if r.status != http.StatusOK || !strings.Contains(r.body, "https://gate4.ai/ru/connectors/email") || !strings.Contains(r.body, "<loc>https://gate4.ai/ru/</loc>") {
+	if r.status != http.StatusOK || !strings.Contains(r.body, "https://gate4.ai/ru/connectors/receipts") || !strings.Contains(r.body, "<loc>https://gate4.ai/ru/</loc>") {
 		t.Fatal(r.body)
 	}
 	r = get(a, "/ru/nothing")
@@ -431,7 +450,7 @@ func TestWebhook(t *testing.T) {
 
 // Webhook и таймер: верный индекс заменяет каталог, подменённый — нет.
 func TestRefreshKeepsLastVerified(t *testing.T) {
-	raw, sig := testdata(t)
+	raw, sig, key := testdata(t)
 	serve := raw
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
@@ -448,7 +467,11 @@ func TestRefreshKeepsLastVerified(t *testing.T) {
 	defer srv.Close()
 	a := testApp(t, false)
 	a.Sources.RegistryURL = srv.URL + "/index.json"
+	a.Sources.RegistryKeys = []string{key}
 	a.Sources.GitHubAPI = srv.URL
+	if _, err := registry.ParsePublicKey(DefaultRegistryKey); err != nil {
+		t.Fatal(err)
+	}
 	if r := do(a, http.MethodPost, "/hooks/registry", "Authorization", "Bearer s3cret"); r.status != http.StatusOK || r.body != "refreshed\n" {
 		t.Fatal(r.status, r.body)
 	}

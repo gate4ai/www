@@ -4,32 +4,32 @@
     <div class="hero-copy">
       <p class="eyebrow"><span class="eyebrow-dot" aria-hidden="true"></span>Open source · runs on your computer</p>
       <h1 class="display">Your AI agents get <em>only</em> what you allow.</h1>
-      <p class="lead">gate4.ai is a guard for your computer. Claude, ChatGPT, OpenClaw and Hermes reach your email, files and browser through it, under your rules: allow, deny, or ask you first. Agents never see your passwords, and every action leaves proof.</p>
+      <p class="lead">gate4.ai is a guard for your computer. Claude, ChatGPT, OpenClaw and Hermes reach your browser and files through it, under your rules: allow, deny, or ask you first. Agents never see your passwords, and every action leaves proof.</p>
       {{template "cmd" .}}
       <p class="hero-meta">macOS, Linux, Windows · no admin rights{{if .Latest}} · <a href="{{.Page.GitHub}}/releases/latest">{{.Latest}}</a>{{end}}</p>
     </div>
-    <figure class="demo" aria-label="Example: an agent asks to send an email, gate4.ai asks you, you allow it">
+    <figure class="demo" aria-label="Example: an agent asks to act on a site, gate4.ai asks you, you allow it">
       <div class="demo-bar"><span class="demo-dots" aria-hidden="true"><i></i><i></i><i></i></span><span>gate4ai · live journal</span></div>
       <ol class="demo-steps">
         <li class="step s1">
           <span class="step-k">Agent</span>
-          <div><strong>Claude.ai</strong> wants <code>email.send</code><br><span class="muted">to landlord@example.com · “Rent for October”</span></div>
+          <div><strong>Claude.ai</strong> wants <code>browser.act</code><br><span class="muted">lk.example.org · “Pay the October utility bill”</span></div>
         </li>
         <li class="step s2">
-          <span class="step-k">Rule</span>
-          <div><code>email-send-trusted</code>: recipient is not in your trusted contacts <span class="pill pill-ask">ask</span></div>
+          <span class="step-k">Sites</span>
+          <div><code>lk.example.org</code> is not on your list of allowed sites <span class="pill pill-ask">ask</span></div>
         </li>
         <li class="step s3">
           <span class="step-k">You</span>
           <div class="notify">
             <span class="notify-src">Telegram · gate4ai</span>
-            <span>Claude.ai wants to email landlord@example.com</span>
-            <span class="notify-btns"><span class="nb">Deny</span><span class="nb nb-yes">Allow</span></span>
+            <span>Claude.ai wants to act on lk.example.org</span>
+            <span class="notify-btns"><span class="nb">Deny</span><span class="nb">Add to allowed sites</span><span class="nb nb-yes">Allow</span></span>
           </div>
         </li>
         <li class="step s4">
           <span class="step-k">Proof</span>
-          <div><span class="pill pill-allow">sent</span> SMTP 250 OK · saved to journal <code>#1842</code></div>
+          <div><span class="pill pill-allow">done</span> screenshot of the receipt · saved to journal <code>#1842</code></div>
         </li>
       </ol>
     </figure>
@@ -40,7 +40,7 @@
   <div class="wrap">
     <h2 class="h2 narrow">Agents are getting the keys to everything. One bad email is enough to turn that into actions.</h2>
     <ol class="problems">
-      <li><span class="num">01</span><h3>Too much access</h3><p>Personal agents get a whole shell, a logged-in browser and your entire mailbox. There is no “only this, only that much”.</p></li>
+      <li><span class="num">01</span><h3>Too much access</h3><p>Personal agents get a whole shell, a logged-in browser and every file on the disk. There is no “only this site, only this folder”.</p></li>
       <li><span class="num">02</span><h3>Prompt injection becomes action</h3><p>A web page or an email with hidden instructions can make an agent forward your data or pay someone.</p></li>
       <li><span class="num">03</span><h3>“Done” without proof</h3><p>Agents report success they did not achieve. Without a server response or a screenshot, you cannot tell.</p></li>
     </ol>
@@ -51,7 +51,7 @@
   <div class="wrap">
     <p class="kicker">How it works</p>
     <h2 class="h2">One gate between all your agents and your computer.</h2>
-    <div class="flow" aria-label="Agent, then gate4.ai with your rules, then connector">
+    <div class="flow" aria-label="Agent, then gate4.ai with your rules, then the browser or files">
       <div class="flow-node"><span class="flow-k">Your agents</span><span>Claude.ai · ChatGPT · Claude Code · OpenClaw · Hermes</span></div>
       <div class="flow-arrow" aria-hidden="true"></div>
       <div class="flow-node flow-gate">
@@ -60,16 +60,16 @@
         <span class="muted small">rules · limits · vault · journal</span>
       </div>
       <div class="flow-arrow" aria-hidden="true"></div>
-      <div class="flow-node"><span class="flow-k">Connectors</span><span>Email · Files · Browser</span></div>
+      <div class="flow-node"><span class="flow-k">Ways out</span><span>Browser · Files · connectors to sites</span></div>
     </div>
     <div class="features">
       <div class="feature">
-        <h3>Rules per agent</h3>
-        <p>Who, what, to whom and how much. Each agent gets its own token and profile, and one set of rules covers them all.</p>
+        <h3>Two lists you control</h3>
+        <p>Sites for the Browser, folders for Files, each line with its mode: allow, read, ask or deny. Wildcards work, the most specific line wins, and every connector lives inside the same lists.</p>
       </div>
       <div class="feature">
         <h3>Passwords stay with you</h3>
-        <p>Agents and connectors see aliases like <code>@mail.work</code>. gate4ai fills in the secret itself, only for the server it belongs to.</p>
+        <p>Agents and connectors see aliases like <code>@bank.main</code>. gate4ai signs in itself, only on the site the account belongs to.</p>
       </div>
       <div class="feature">
         <h3>Proof for every action</h3>
@@ -90,42 +90,37 @@
     <div class="rules">
       <article class="rule">
         <div class="rule-say">
-          <h3>“Email my accountant freely. Anyone else, ask me first.”</h3>
-          <p class="muted">Trusted contacts go out at once; any other recipient waits for your tap.</p>
+          <h3>“Read my bank freely. On the utility site, ask me before every action. Everything else is closed.”</h3>
+          <p class="muted">A list of sites, each with its mode. Reading is silent; anything beyond reading on an <code>ask</code> site waits for your tap.</p>
         </div>
-<pre class="code"><code><span class="c-k">- id:</span> email-accountant
-  <span class="c-k">action:</span> email.send
-  <span class="c-k">when:</span> to.all(r, r in lists.contacts_trusted)
-  <span class="c-k">effect:</span> <span class="c-allow">allow</span>
-<span class="c-k">- id:</span> email-others
-  <span class="c-k">action:</span> email.send
-  <span class="c-k">effect:</span> <span class="c-ask">ask</span></code></pre>
+<pre class="code"><code><span class="c-k">access:</span>
+  <span class="c-k">sites:</span>
+    - { domain: "*.bank.example", access: <span class="c-allow">read</span> }
+    - { domain: "lk.example.org", access: <span class="c-ask">ask</span> }
+    - { domain: "*", access: <span class="c-deny">deny</span> }</code></pre>
       </article>
       <article class="rule">
         <div class="rule-say">
-          <h3>“Read my notes. Change them only after I approve in Telegram.”</h3>
-          <p class="muted">Reading is silent; every edit becomes a message with Allow and Deny.</p>
+          <h3>“Read my notes. Add to them, but never rewrite. Downloads: only through connectors I installed.”</h3>
+          <p class="muted">A list of folders. <code>append</code> adds lines without touching what is there; <code>connector</code> keeps the agent out and lets a trusted connector in.</p>
         </div>
-<pre class="code"><code><span class="c-k">- id:</span> notes-read
-  <span class="c-k">action:</span> files.read
-  <span class="c-k">when:</span> glob(path, "~/Documents/notes/**")
-  <span class="c-k">effect:</span> <span class="c-allow">allow</span>
-<span class="c-k">- id:</span> notes-append
-  <span class="c-k">action:</span> files.append
-  <span class="c-k">when:</span> glob(path, "~/Documents/notes/**")
-  <span class="c-k">effect:</span> <span class="c-ask">ask</span></code></pre>
+<pre class="code"><code><span class="c-k">access:</span>
+  <span class="c-k">folders:</span>
+    - { path: "~/Documents/notes", access: <span class="c-allow">append</span> }
+    - { path: "~/Downloads", access: <span class="c-ask">connector</span> }
+    - { path: "~/.ssh", access: <span class="c-deny">deny</span> }</code></pre>
       </article>
       <article class="rule">
         <div class="rule-say">
-          <h3>“Never write to an address the agent found in an incoming email. And no more than 20 emails a day.”</h3>
-          <p class="muted">gate4ai tracks where each argument came from, so a planted address is refused.</p>
+          <h3>“Never pay to an account the agent found on a web page. And no more than 20 page actions a day.”</h3>
+          <p class="muted">gate4ai tracks where each argument came from, so a payee planted by a page is refused.</p>
         </div>
-<pre class="code"><code><span class="c-k">- id:</span> no-injected-recipients
-  <span class="c-k">action:</span> email.send
-  <span class="c-k">when:</span> "'untrusted_content' in provenance.to"
+<pre class="code"><code><span class="c-k">- id:</span> no-injected-payees
+  <span class="c-k">action:</span> utilities.pay_bill
+  <span class="c-k">when:</span> "'untrusted_content' in provenance.payee"
   <span class="c-k">effect:</span> <span class="c-deny">deny</span>
 <span class="c-k">limits:</span>
-  - { id: mail-per-day, action: email.send, per_day: 20 }</code></pre>
+  - { id: acts-per-day, action: browser.act, per_day: 20 }</code></pre>
       </article>
     </div>
   </div>
@@ -149,7 +144,7 @@
   <div class="wrap">
     <p class="kicker">Connectors</p>
     <div class="section-head">
-      <h2 class="h2">Each connector declares what it may touch.</h2>
+      <h2 class="h2">Browser and Files are built in. Each connector declares which sites and folders it may touch.</h2>
       <a class="link-arrow" href="{{.Page.P}}/connectors">All connectors</a>
     </div>
     <div class="cards">
@@ -164,9 +159,9 @@
     <p class="kicker">Built to be checked</p>
     <h2 class="h2">You should not have to trust us. So you can verify.</h2>
     <ul class="trust">
-      <li><h3>Open source</h3><p>Core, relay, SDK and connectors are on <a href="https://github.com/gate4ai">GitHub</a>. Core, relay and connectors are AGPL-3.0, the SDK is Apache-2.0.</p></li>
+      <li><h3>Open source</h3><p>Core with the Browser and Files, relay and SDK are on <a href="https://github.com/gate4ai">GitHub</a>. Core and relay are AGPL-3.0, the SDK is Apache-2.0.</p></li>
       <li><h3>Signed releases</h3><p>Checksums are signed with cosign; the installer refuses a tampered archive.</p></li>
-      <li><h3>Signed connectors</h3><p>Packages are signed by the publisher, the store index by gate4.ai. Revoked versions do not install.</p></li>
+      <li><h3>Signed connectors</h3><p>Store connectors are WASM modules without network access, signed by the publisher; the store index is signed by gate4.ai. Revoked versions do not install.</p></li>
       <li><h3>Local first</h3><p>No account and no cloud. Your rules, secrets and journal stay on your computer; the relay is optional.</p></li>
     </ul>
   </div>

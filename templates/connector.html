@@ -17,7 +17,6 @@
   <div class="wrap narrow-wrap">
     <h2 class="h3">{{.Page.T.ConnectorInstall}}</h2>
     <p class="muted">{{.Page.T.ConnectorInstallLead}}</p>
-    {{if .Card.Native}}<p class="muted">{{.Page.T.ConnectorNative}}</p>{{end}}
     <div class="cmd-line">
       <code><span class="cmd-prompt" aria-hidden="true">$</span> gate4ai connectors install {{.Card.Name}}</code>
       <button class="copy" type="button" data-copy="gate4ai connectors install {{.Card.Name}}" data-done="{{.Page.T.Copied}}" hidden>{{.Page.T.Copy}}</button>

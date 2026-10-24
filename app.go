@@ -247,7 +247,7 @@ func (a *App) homeEn(w http.ResponseWriter, r *http.Request) {
 	}
 	render(w, http.StatusOK, "index_en", homeView{
 		Page: newPage(En, "/", "gate4.ai: AI agents get only what you allow",
-			"A guard for your computer. Claude, ChatGPT, Claude Code, OpenClaw and Hermes reach your email, files and browser only under your rules: allow, deny or ask you first."),
+			"A guard for your computer. Claude, ChatGPT, Claude Code, OpenClaw and Hermes reach your browser and files only under your rules: allow, deny or ask you first."),
 		OS: visitorOS(r), Cards: a.homeCards(En), Latest: a.Latest(),
 	})
 }
@@ -256,7 +256,7 @@ func (a *App) homeRu(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Vary", "User-Agent")
 	render(w, http.StatusOK, "index_ru", homeView{
 		Page: newPage(Ru, "/", "gate4.ai: AI-агенты получают только то, что вы разрешили",
-			"Страж для вашего компьютера. Claude, ChatGPT, Claude Code, OpenClaw и Hermes получают доступ к почте, файлам и браузеру только по вашим правилам: разрешить, запретить или спросить вас."),
+			"Страж для вашего компьютера. Claude, ChatGPT, Claude Code, OpenClaw и Hermes получают доступ к браузеру и файлам только по вашим правилам: разрешить, запретить или спросить вас."),
 		OS: visitorOS(r), Cards: a.homeCards(Ru), Latest: a.Latest(),
 	})
 }
@@ -278,20 +278,21 @@ func (a *App) install(lang Lang) http.HandlerFunc {
 }
 
 type catalogView struct {
-	Page   Page
-	Q      string
-	Trust  string
-	Levels []string
-	Loaded bool
-	Total  int
-	Cards  []Card
+	Page     Page
+	Q        string
+	Trust    string
+	Levels   []string
+	Loaded   bool
+	Total    int
+	Cards    []Card
+	Builtins []Builtin // Браузер и Файлы: встроены, в магазине их нет
 }
 
 func (a *App) catalogPage(lang Lang) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		t := lang.Tr()
 		v := catalogView{Page: newPage(lang, "/connectors", t.CatalogTitle, t.CatalogLead),
-			Q: r.URL.Query().Get("q"), Levels: registry.TrustLevels}
+			Q: r.URL.Query().Get("q"), Levels: registry.TrustLevels, Builtins: Builtins(lang)}
 		if trust := r.URL.Query().Get("trust"); slices.Contains(registry.TrustLevels, trust) {
 			v.Trust = trust
 		}
