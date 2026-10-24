@@ -16,11 +16,20 @@
 #                             WAYLAND_DISPLAY; macOS outside SSH) and outside CI
 #                             (CI not set), the installer runs gate4ai ui: the
 #                             browser opens the setup wizard.
+#   GATE4AI_INSTALL_DEPS=1    install what the browser of agents needs without
+#                             asking: Google Chrome, on Linux without a screen
+#                             also Xvfb (a virtual screen) and fonts (with sudo).
+#                             By default the installer checks them, prints the
+#                             commands and, at a terminal, asks first.
+#   GATE4AI_NO_BROWSER=1      no browser for agents: do not check Chrome and do
+#                             not install the browser package (later: gate4ai
+#                             browser setup, gate4ai connectors install browser).
 #
 # Downloads the release from GitHub, checks sha256 checksums (and the cosign
 # signature when cosign is installed: made by release.yml of gate4ai/gate4ai
-# on a v* tag) and only then installs. Never calls sudo and never touches
-# your configuration or data.
+# on a v* tag) and only then installs. Never touches your configuration or
+# data and calls sudo only to install Chrome or Xvfb after you agree
+# (gate4ai browser setup).
 #
 # The whole script is one function called on the last line: a download cut
 # short by the network does not run half of it.
@@ -36,6 +45,8 @@ main() {
   NO_TRAY="${GATE4AI_NO_TRAY:-}"
   NO_START="${GATE4AI_NO_START:-}"
   NO_OPEN="${GATE4AI_NO_OPEN:-}"
+  INSTALL_DEPS="${GATE4AI_INSTALL_DEPS:-}"
+  NO_BROWSER="${GATE4AI_NO_BROWSER:-}"
 
   say() { printf '%s\n' "$*"; }
   fail() {
@@ -217,6 +228,27 @@ main() {
 
   # gate4ai is called by its full path: INSTALL_DIR may be missing from PATH.
   gate="$INSTALL_DIR/gate4ai"
+
+  # --- the browser of agents: Chrome, on a server also a virtual screen ---
+  # gate4ai browser setup checks them and installs what is missing only after
+  # a yes (its question reads the terminal: stdin is this script under curl | sh).
+  daemon_flags=""
+  say ""
+  if [ -n "$NO_BROWSER" ]; then
+    daemon_flags="--no-browser"
+    say "The browser of agents is off (GATE4AI_NO_BROWSER). Later: gate4ai browser setup, then gate4ai connectors install browser"
+  else
+    say "The browser of agents (gate4ai browser setup):"
+    browser_ok=1
+    if [ -n "$INSTALL_DEPS" ]; then
+      GATE4AI_OUTPUT=table "$gate" browser setup --yes || browser_ok=""
+    elif [ -t 2 ] && [ -z "${CI:-}" ] && (exec </dev/tty) 2>/dev/null; then
+      GATE4AI_OUTPUT=table "$gate" browser setup </dev/tty || browser_ok=""
+    else
+      GATE4AI_OUTPUT=table "$gate" browser setup --dry-run || browser_ok=""
+    fi
+    [ -n "$browser_ok" ] || say "Agents get browser_unavailable until Chrome is installed: gate4ai browser setup"
+  fi
   running=""
   if [ -n "$NO_START" ]; then
     # An update: a daemon that is already running keeps the old binary until it restarts.
@@ -233,8 +265,10 @@ main() {
     say ""
     no_tray_flag=""
     [ -n "$tray" ] || no_tray_flag="--no-tray"
+    dflags=""
+    [ -z "$daemon_flags" ] || dflags="-- $daemon_flags"
     # shellcheck disable=SC2086
-    if "$gate" service install $no_tray_flag >/dev/null; then
+    if "$gate" service install $no_tray_flag $dflags >/dev/null; then
       running=1
       say "The gate4ai daemon is running and starts at every login (gate4ai service status)."
     else
