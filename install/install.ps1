@@ -14,6 +14,11 @@
 #                                     default, outside CI (CI not set), the installer
 #                                     runs gate4ai ui: the browser opens the setup
 #                                     wizard.
+#   $env:GATE4AI_INSTALL_DEPS = '1'   install Google Chrome for the browser of agents
+#                                     without asking (winget, for this user). By
+#                                     default the installer checks it and asks first.
+#   $env:GATE4AI_NO_BROWSER = '1'     no browser for agents: do not check Chrome and
+#                                     do not install the browser package.
 #
 # Downloads the release from GitHub, checks sha256 checksums and only then
 # installs. Never touches your configuration or data.
@@ -123,6 +128,23 @@ function Install-Gate4ai {
         Write-Host "Installed: $version"
         Write-Host "  $exe"
         if (-not $noTray) { Write-Host "  $(Join-Path $dir 'gate4ai-tray.exe')" }
+        # The browser of agents: Google Chrome (gate4ai browser setup asks before installing it).
+        $daemonArgs = @()
+        Write-Host ''
+        if ($env:GATE4AI_NO_BROWSER) {
+            $daemonArgs = @('--', '--no-browser')
+            Write-Host 'The browser of agents is off (GATE4AI_NO_BROWSER). Later: gate4ai browser setup, then gate4ai connectors install browser'
+        } else {
+            Write-Host 'The browser of agents (gate4ai browser setup):'
+            $setupArgs = @('browser', 'setup')
+            if ($env:GATE4AI_INSTALL_DEPS) { $setupArgs += '--yes' } elseif ($env:CI) { $setupArgs += '--dry-run' }
+            $prevOutput = $env:GATE4AI_OUTPUT
+            $env:GATE4AI_OUTPUT = 'table'
+            $browserOK = $false
+            try { & $exe @setupArgs; $browserOK = ($LASTEXITCODE -eq 0) } catch { $browserOK = $false }
+            $env:GATE4AI_OUTPUT = $prevOutput
+            if (-not $browserOK) { Write-Host 'Agents get browser_unavailable until Chrome is installed: gate4ai browser setup' }
+        }
         $running = $false
         if ($noStart) {
             # An update: a daemon that is already running keeps the old binary until it restarts.
@@ -144,6 +166,7 @@ function Install-Gate4ai {
             Write-Host ''
             $svcArgs = @('service', 'install')
             if ($noTray) { $svcArgs += '--no-tray' }
+            $svcArgs += $daemonArgs
             & $exe @svcArgs | Out-Null
             if ($LASTEXITCODE -eq 0) {
                 $running = $true
