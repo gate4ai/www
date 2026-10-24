@@ -18,7 +18,7 @@ func TestHumanizeCapabilities(t *testing.T) {
 		want string
 	}{
 		{"site ${setting:domains}: allow", En, "Reaches sites only through your Browser and only domains (allow); the site must be on your list too"},
-		{"site lk.example.org: read", Ru, "Ходит на сайты только через ваш Браузер и только на lk.example.org (read); сайт должен быть разрешён и в вашем списке"},
+		{"site account.example.org: read", Ru, "Ходит на сайты только через ваш Браузер и только на account.example.org (read); сайт должен быть разрешён и в вашем списке"},
 		{"folder ${setting:folder}: append", Ru, "Работает с файлами только через ваши Файлы и только в folder (append); папка должна быть разрешена и в вашем списке"},
 		{"folder ~/Downloads: read", En, "Works with files only through your Files and only in ~/Downloads (read); the folder must be on your list too"},
 		{"signs in on ${setting:login_site} with your account (slot site)", En,
@@ -102,7 +102,7 @@ func TestBuiltins(t *testing.T) {
 func TestSummarizeCapabilities(t *testing.T) {
 	receipts := []string{
 		"call browser (contract 1): download, open",
-		"site lk.example.org: read", "site *.pay.example: read",
+		"site account.example.org: read", "site *.pay.example: read",
 		"folder ${setting:folder}: append",
 		"action save calls browser.open, browser.download",
 		"storage 5 MB",
@@ -110,7 +110,7 @@ func TestSummarizeCapabilities(t *testing.T) {
 	got := summarize(receipts, En)
 	want := []string{
 		"Calls actions of the browser connector: download, open",
-		"Reaches sites only through your Browser and only lk.example.org (read) and *.pay.example (read); the site must be on your list too",
+		"Reaches sites only through your Browser and only account.example.org (read) and *.pay.example (read); the site must be on your list too",
 		"Works with files only through your Files and only in folder (append); the folder must be on your list too",
 		"Action save runs browser.open, browser.download; allowing save allows them too",
 		"Keeps its own data on your computer: up to 5 MB",
@@ -119,7 +119,7 @@ func TestSummarizeCapabilities(t *testing.T) {
 		t.Errorf("receipts en: %q", got)
 	}
 	got = summarize(receipts, Ru)
-	if len(got) != 5 || !strings.HasPrefix(got[1], "Ходит на сайты только через ваш Браузер и только на lk.example.org (read) и *.pay.example (read)") {
+	if len(got) != 5 || !strings.HasPrefix(got[1], "Ходит на сайты только через ваш Браузер и только на account.example.org (read) и *.pay.example (read)") {
 		t.Errorf("receipts ru: %q", got)
 	}
 	// Повторы схлопываются; порядок — по первому появлению.
