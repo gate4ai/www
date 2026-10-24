@@ -247,7 +247,7 @@ func TestScriptsAndLatest(t *testing.T) {
 	for _, want := range []string{"GATE4AI_NO_START", "GATE4AI_NO_OPEN", "service install", `"$gate" ui`,
 		"WAYLAND_DISPLAY", "${CI:-}", "Next: gate4ai ui   # opens the setup wizard in your browser", "daemon restart",
 		// Браузер агентов: проверка, установка с согласия (ответ — из терминала), отказ от браузера.
-		"GATE4AI_INSTALL_DEPS", "GATE4AI_NO_BROWSER", `browser setup </dev/tty`, "browser setup --dry-run", "-- $daemon_flags"} {
+		"GATE4AI_INSTALL_DEPS", "GATE4AI_NO_BROWSER", `browser setup </dev/tty`, "browser setup --dry-run"} {
 		if !strings.Contains(r.body, want) {
 			t.Errorf("install.sh: no %q", want)
 		}
@@ -260,7 +260,7 @@ func TestScriptsAndLatest(t *testing.T) {
 		t.Error("install.ps1")
 	}
 	for _, want := range []string{"GATE4AI_NO_START", "GATE4AI_NO_OPEN", "service", "& $exe ui",
-		"$env:CI", "Next: gate4ai ui   # opens the setup wizard in your browser", "GATE4AI_INSTALL_DEPS", "GATE4AI_NO_BROWSER", "'browser', 'setup'", "'--no-browser'"} {
+		"$env:CI", "Next: gate4ai ui   # opens the setup wizard in your browser", "GATE4AI_INSTALL_DEPS", "GATE4AI_NO_BROWSER", "'browser', 'setup'"} {
 		if !strings.Contains(r.body, want) {
 			t.Errorf("install.ps1: no %q", want)
 		}

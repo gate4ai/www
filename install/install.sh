@@ -21,9 +21,8 @@
 #                             also Xvfb (a virtual screen) and fonts (with sudo).
 #                             By default the installer checks them, prints the
 #                             commands and, at a terminal, asks first.
-#   GATE4AI_NO_BROWSER=1      no browser for agents: do not check Chrome and do
-#                             not install the browser package (later: gate4ai
-#                             browser setup, gate4ai connectors install browser).
+#   GATE4AI_NO_BROWSER=1      do not check Chrome now (the browser is built into
+#                             gate4ai; check later with gate4ai browser setup).
 #
 # Downloads the release from GitHub, checks sha256 checksums (and the cosign
 # signature when cosign is installed: made by release.yml of gate4ai/gate4ai
@@ -232,11 +231,9 @@ main() {
   # --- the browser of agents: Chrome, on a server also a virtual screen ---
   # gate4ai browser setup checks them and installs what is missing only after
   # a yes (its question reads the terminal: stdin is this script under curl | sh).
-  daemon_flags=""
   say ""
   if [ -n "$NO_BROWSER" ]; then
-    daemon_flags="--no-browser"
-    say "The browser of agents is off (GATE4AI_NO_BROWSER). Later: gate4ai browser setup, then gate4ai connectors install browser"
+    say "Chrome is not checked (GATE4AI_NO_BROWSER). Agents get browser_unavailable until it is installed: gate4ai browser setup"
   else
     say "The browser of agents (gate4ai browser setup):"
     browser_ok=1
@@ -265,10 +262,8 @@ main() {
     say ""
     no_tray_flag=""
     [ -n "$tray" ] || no_tray_flag="--no-tray"
-    dflags=""
-    [ -z "$daemon_flags" ] || dflags="-- $daemon_flags"
     # shellcheck disable=SC2086
-    if "$gate" service install $no_tray_flag $dflags >/dev/null; then
+    if "$gate" service install $no_tray_flag >/dev/null; then
       running=1
       say "The gate4ai daemon is running and starts at every login (gate4ai service status)."
     else
