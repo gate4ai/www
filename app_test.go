@@ -236,7 +236,9 @@ func TestScriptsAndLatest(t *testing.T) {
 	}
 	// Автозапуск по умолчанию, отказ — GATE4AI_NO_START; мастер в браузере — gate4ai ui, отказ — GATE4AI_NO_OPEN.
 	for _, want := range []string{"GATE4AI_NO_START", "GATE4AI_NO_OPEN", "service install", `"$gate" ui`,
-		"WAYLAND_DISPLAY", "${CI:-}", "Next: gate4ai ui   # opens the setup wizard in your browser", "daemon restart"} {
+		"WAYLAND_DISPLAY", "${CI:-}", "Next: gate4ai ui   # opens the setup wizard in your browser", "daemon restart",
+		// Браузер агентов: проверка, установка с согласия (ответ — из терминала), отказ от браузера.
+		"GATE4AI_INSTALL_DEPS", "GATE4AI_NO_BROWSER", `browser setup </dev/tty`, "browser setup --dry-run", "-- $daemon_flags"} {
 		if !strings.Contains(r.body, want) {
 			t.Errorf("install.sh: no %q", want)
 		}
