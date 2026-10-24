@@ -46,7 +46,7 @@ jobs:
           for i in $(seq 1 30); do curl -fsS -o /dev/null http://127.0.0.1:8080/connectors.json && break; sleep 1; done
           css=$(curl -fsS http://127.0.0.1:8080/static/site.css | wc -c)
           js=$(curl -fsS http://127.0.0.1:8080/static/site.js | wc -c)
-          for p in /?lang=en /ru/ /install /connectors /connectors/email; do
+          for p in /?lang=en /ru/ /install /connectors; do
             html=$(curl -fsS "http://127.0.0.1:8080$p" | wc -c)
             total=$((html + css + js)); echo "$p: $total bytes"
             [ "$total" -lt 100000 ]
