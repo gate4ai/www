@@ -19,6 +19,13 @@
 </section>
 <section class="section section-tight">
   <div class="wrap">
+    {{if and (not .Q) (not .Trust)}}
+    <h2 class="h3">{{.Page.T.CatalogBuiltin}}</h2>
+    <p class="muted narrow">{{.Page.T.CatalogBuiltinLead}}</p>
+    <ul class="builtins">
+      {{range .Builtins}}<li><span class="card-name">{{.Title}}</span> <span class="card-id">{{.Name}}</span><span class="card-desc">{{.Description}}</span></li>{{end}}
+    </ul>
+    {{end}}
     {{if not .Loaded}}
     <p class="empty">{{.Page.T.CatalogUnavailable}}</p>
     {{else if not .Cards}}

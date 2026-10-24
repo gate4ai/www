@@ -4,32 +4,32 @@
     <div class="hero-copy">
       <p class="eyebrow"><span class="eyebrow-dot" aria-hidden="true"></span>Открытый код · работает на вашем компьютере</p>
       <h1 class="display">AI-агенты получают <em>только</em> то, что вы разрешили.</h1>
-      <p class="lead">gate4.ai — страж для вашего компьютера. Claude, ChatGPT, OpenClaw и Hermes получают доступ к почте, файлам и браузеру через него и по вашим правилам: разрешить, запретить или сначала спросить вас. Пароли агенты не видят, а у каждого действия есть доказательство.</p>
+      <p class="lead">gate4.ai — страж для вашего компьютера. Claude, ChatGPT, OpenClaw и Hermes получают доступ к браузеру и файлам через него и по вашим правилам: разрешить, запретить или сначала спросить вас. Пароли агенты не видят, а у каждого действия есть доказательство.</p>
       {{template "cmd" .}}
       <p class="hero-meta">macOS, Linux, Windows · без прав администратора{{if .Latest}} · <a href="{{.Page.GitHub}}/releases/latest">{{.Latest}}</a>{{end}}</p>
     </div>
-    <figure class="demo" aria-label="Пример: агент хочет отправить письмо, gate4.ai спрашивает вас, вы разрешаете">
+    <figure class="demo" aria-label="Пример: агент хочет действовать на сайте, gate4.ai спрашивает вас, вы разрешаете">
       <div class="demo-bar"><span class="demo-dots" aria-hidden="true"><i></i><i></i><i></i></span><span>gate4ai · журнал</span></div>
       <ol class="demo-steps">
         <li class="step s1">
           <span class="step-k">Агент</span>
-          <div><strong>Claude.ai</strong> хочет <code>email.send</code><br><span class="muted">landlord@example.com · «Аренда за октябрь»</span></div>
+          <div><strong>Claude.ai</strong> хочет <code>browser.act</code><br><span class="muted">lk.example.org · «Оплатить коммуналку за октябрь»</span></div>
         </li>
         <li class="step s2">
-          <span class="step-k">Правило</span>
-          <div><code>email-send-trusted</code>: адресата нет в доверенных контактах <span class="pill pill-ask">спросить</span></div>
+          <span class="step-k">Сайты</span>
+          <div><code>lk.example.org</code> нет в вашем списке разрешённых сайтов <span class="pill pill-ask">спросить</span></div>
         </li>
         <li class="step s3">
           <span class="step-k">Вы</span>
           <div class="notify">
             <span class="notify-src">Telegram · gate4ai</span>
-            <span>Claude.ai хочет написать landlord@example.com</span>
-            <span class="notify-btns"><span class="nb">Отклонить</span><span class="nb nb-yes">Разрешить</span></span>
+            <span>Claude.ai хочет действовать на lk.example.org</span>
+            <span class="notify-btns"><span class="nb">Отклонить</span><span class="nb">В разрешённые сайты</span><span class="nb nb-yes">Разрешить</span></span>
           </div>
         </li>
         <li class="step s4">
           <span class="step-k">Итог</span>
-          <div><span class="pill pill-allow">отправлено</span> SMTP 250 OK · в журнале <code>#1842</code></div>
+          <div><span class="pill pill-allow">сделано</span> скриншот квитанции · в журнале <code>#1842</code></div>
         </li>
       </ol>
     </figure>
@@ -40,7 +40,7 @@
   <div class="wrap">
     <h2 class="h2 narrow">Агентам отдают ключи от всего. Одного вредного письма хватает, чтобы это стало действиями.</h2>
     <ol class="problems">
-      <li><span class="num">01</span><h3>Слишком много доступа</h3><p>Персональный агент получает весь shell, залогиненный браузер и почту целиком. Нельзя сказать «только это и не больше стольких».</p></li>
+      <li><span class="num">01</span><h3>Слишком много доступа</h3><p>Персональный агент получает весь shell, залогиненный браузер и все файлы на диске. Нельзя сказать «только этот сайт, только эту папку».</p></li>
       <li><span class="num">02</span><h3>Prompt injection становится действием</h3><p>Страница или письмо со скрытой инструкцией может заставить агента переслать ваши данные или заплатить кому-то.</p></li>
       <li><span class="num">03</span><h3>«Сделано» без доказательств</h3><p>Агенты сообщают об успехе, которого не было. Без ответа сервера или скриншота это не проверить.</p></li>
     </ol>
@@ -51,7 +51,7 @@
   <div class="wrap">
     <p class="kicker">Как работает</p>
     <h2 class="h2">Один шлюз между всеми агентами и вашим компьютером.</h2>
-    <div class="flow" aria-label="Агент, затем gate4.ai с вашими правилами, затем коннектор">
+    <div class="flow" aria-label="Агент, затем gate4.ai с вашими правилами, затем браузер или файлы">
       <div class="flow-node"><span class="flow-k">Ваши агенты</span><span>Claude.ai · ChatGPT · Claude Code · OpenClaw · Hermes</span></div>
       <div class="flow-arrow" aria-hidden="true"></div>
       <div class="flow-node flow-gate">
@@ -60,16 +60,16 @@
         <span class="muted small">правила · лимиты · хранилище · журнал</span>
       </div>
       <div class="flow-arrow" aria-hidden="true"></div>
-      <div class="flow-node"><span class="flow-k">Коннекторы</span><span>Почта · Файлы · Браузер</span></div>
+      <div class="flow-node"><span class="flow-k">Выходы наружу</span><span>Браузер · Файлы · коннекторы к сайтам</span></div>
     </div>
     <div class="features">
       <div class="feature">
-        <h3>Правила для каждого агента</h3>
-        <p>Кто, что, кому и сколько. У каждого агента свой токен и профиль, а правила одни на всех.</p>
+        <h3>Два списка под вашим контролем</h3>
+        <p>Сайты для Браузера, папки для Файлов, у каждой строки свой режим: разрешить, читать, спросить или запретить. Маски работают, побеждает самая конкретная строка, и каждый коннектор живёт внутри тех же списков.</p>
       </div>
       <div class="feature">
         <h3>Пароли остаются у вас</h3>
-        <p>Агенты и коннекторы видят только алиасы вроде <code>@mail.work</code>. Секрет подставляет сам gate4ai и только для своего сервера.</p>
+        <p>Агенты и коннекторы видят только алиасы вроде <code>@bank.main</code>. Входит на сайт сам gate4ai и только на тот, к которому привязана учётка.</p>
       </div>
       <div class="feature">
         <h3>Доказательство каждого действия</h3>
@@ -90,42 +90,37 @@
     <div class="rules">
       <article class="rule">
         <div class="rule-say">
-          <h3>«Писать бухгалтеру — сразу. Всем остальным — только спросив меня».</h3>
-          <p class="muted">Письма доверенным контактам уходят сразу, остальные ждут вашего решения.</p>
+          <h3>«Банк читать можно. На сайте коммуналки — спрашивать перед каждым действием. Всё остальное закрыто».</h3>
+          <p class="muted">Список сайтов, у каждого свой режим. Чтение проходит молча; всё, что больше чтения, на сайте <code>ask</code> ждёт вашего решения.</p>
         </div>
-<pre class="code"><code><span class="c-k">- id:</span> email-accountant
-  <span class="c-k">action:</span> email.send
-  <span class="c-k">when:</span> to.all(r, r in lists.contacts_trusted)
-  <span class="c-k">effect:</span> <span class="c-allow">allow</span>
-<span class="c-k">- id:</span> email-others
-  <span class="c-k">action:</span> email.send
-  <span class="c-k">effect:</span> <span class="c-ask">ask</span></code></pre>
+<pre class="code"><code><span class="c-k">access:</span>
+  <span class="c-k">sites:</span>
+    - { domain: "*.bank.example", access: <span class="c-allow">read</span> }
+    - { domain: "lk.example.org", access: <span class="c-ask">ask</span> }
+    - { domain: "*", access: <span class="c-deny">deny</span> }</code></pre>
       </article>
       <article class="rule">
         <div class="rule-say">
-          <h3>«Читать заметки можно. Менять — только после моего “да” в Telegram».</h3>
-          <p class="muted">Чтение проходит молча, каждая правка приходит сообщением с кнопками.</p>
+          <h3>«Заметки читать и дописывать, но не переписывать. Загрузки — только через коннекторы, которые я поставил».</h3>
+          <p class="muted">Список папок. <code>append</code> добавляет строки, не трогая написанное; <code>connector</code> не пускает агента напрямую, но пускает доверенный коннектор.</p>
         </div>
-<pre class="code"><code><span class="c-k">- id:</span> notes-read
-  <span class="c-k">action:</span> files.read
-  <span class="c-k">when:</span> glob(path, "~/Documents/notes/**")
-  <span class="c-k">effect:</span> <span class="c-allow">allow</span>
-<span class="c-k">- id:</span> notes-append
-  <span class="c-k">action:</span> files.append
-  <span class="c-k">when:</span> glob(path, "~/Documents/notes/**")
-  <span class="c-k">effect:</span> <span class="c-ask">ask</span></code></pre>
+<pre class="code"><code><span class="c-k">access:</span>
+  <span class="c-k">folders:</span>
+    - { path: "~/Documents/notes", access: <span class="c-allow">append</span> }
+    - { path: "~/Downloads", access: <span class="c-ask">connector</span> }
+    - { path: "~/.ssh", access: <span class="c-deny">deny</span> }</code></pre>
       </article>
       <article class="rule">
         <div class="rule-say">
-          <h3>«Никогда не писать на адрес, найденный во входящем письме. И не больше 20 писем в день».</h3>
-          <p class="muted">gate4ai помнит, откуда взялся каждый аргумент, поэтому подброшенный адрес не пройдёт.</p>
+          <h3>«Никогда не платить на счёт, который агент нашёл на веб-странице. И не больше 20 действий на страницах в день».</h3>
+          <p class="muted">gate4ai помнит, откуда взялся каждый аргумент, поэтому подброшенный страницей получатель не пройдёт.</p>
         </div>
-<pre class="code"><code><span class="c-k">- id:</span> no-injected-recipients
-  <span class="c-k">action:</span> email.send
-  <span class="c-k">when:</span> "'untrusted_content' in provenance.to"
+<pre class="code"><code><span class="c-k">- id:</span> no-injected-payees
+  <span class="c-k">action:</span> utilities.pay_bill
+  <span class="c-k">when:</span> "'untrusted_content' in provenance.payee"
   <span class="c-k">effect:</span> <span class="c-deny">deny</span>
 <span class="c-k">limits:</span>
-  - { id: mail-per-day, action: email.send, per_day: 20 }</code></pre>
+  - { id: acts-per-day, action: browser.act, per_day: 20 }</code></pre>
       </article>
     </div>
   </div>
@@ -149,7 +144,7 @@
   <div class="wrap">
     <p class="kicker">Коннекторы</p>
     <div class="section-head">
-      <h2 class="h2">Каждый коннектор заранее объявляет, к чему прикоснётся.</h2>
+      <h2 class="h2">Браузер и Файлы встроены. Каждый коннектор заранее объявляет, к каким сайтам и папкам прикоснётся.</h2>
       <a class="link-arrow" href="{{.Page.P}}/connectors">Все коннекторы</a>
     </div>
     <div class="cards">
@@ -164,9 +159,9 @@
     <p class="kicker">Можно проверить</p>
     <h2 class="h2">Нам не нужно верить на слово. Всё можно проверить.</h2>
     <ul class="trust">
-      <li><h3>Открытый код</h3><p>Ядро, relay, SDK и коннекторы — на <a href="https://github.com/gate4ai">GitHub</a>. Ядро, relay и коннекторы — под AGPL-3.0, SDK — под Apache-2.0.</p></li>
+      <li><h3>Открытый код</h3><p>Ядро с Браузером и Файлами, relay и SDK — на <a href="https://github.com/gate4ai">GitHub</a>. Ядро и relay — под AGPL-3.0, SDK — под Apache-2.0.</p></li>
       <li><h3>Подписанные релизы</h3><p>Контрольные суммы подписаны cosign; подменённый архив установщик не поставит.</p></li>
-      <li><h3>Подписанные коннекторы</h3><p>Пакеты подписывает издатель, индекс магазина — gate4.ai. Отозванные версии не ставятся.</p></li>
+      <li><h3>Подписанные коннекторы</h3><p>Коннекторы магазина — WASM-модули без доступа к сети; пакеты подписывает издатель, индекс магазина — gate4.ai. Отозванные версии не ставятся.</p></li>
       <li><h3>Всё у вас</h3><p>Ни аккаунта, ни облака. Правила, секреты и журнал остаются на вашем компьютере; relay необязателен.</p></li>
     </ul>
   </div>

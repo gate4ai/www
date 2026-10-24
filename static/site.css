@@ -271,6 +271,12 @@ a.agent:hover { color: inherit; border-color: var(--c-accent); }
 .agent-more { font-size: var(--fs-small); font-weight: 600; color: var(--c-accent); }
 .agent-more::after { content: " \2192"; }
 
+/* встроенные (Браузер, Файлы): не ссылки, ставить нечего */
+.builtins { list-style: none; padding: 0; margin: var(--s-4) 0 var(--s-7); display: grid; gap: var(--s-3); }
+@media (min-width: 640px) { .builtins { grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr)); } }
+.builtins li { display: grid; gap: var(--s-2); padding: var(--s-5); border: 1px dashed var(--c-border); border-radius: var(--radius-l); }
+.builtins .card-id { margin-left: var(--s-2); }
+
 /* карточки коннекторов */
 .cards { display: grid; gap: var(--s-4); }
 @media (min-width: 640px) { .cards { grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr)); } }

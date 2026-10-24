@@ -142,7 +142,8 @@ type Tr struct {
 	ConnectorCapsLead    string
 	ConnectorInstall     string
 	ConnectorInstallLead string
-	ConnectorNative      string
+	CatalogBuiltin       string
+	CatalogBuiltinLead   string
 	ConnectorOpen        string
 	ConnectorOpenNote    string
 	ConnectorTechnical   string
@@ -215,7 +216,7 @@ var EnTr = Tr{
 	InstallNextReadme:    "Prefer the terminal? Read the README",
 	InstallLatest:        "Latest release",
 	CatalogTitle:         "Connectors",
-	CatalogLead:          "Email, files, browser: each connector declares exactly what it may touch. You see it before you install, and gate4ai enforces it.",
+	CatalogLead:          "Connectors to sites and services: each one declares the sites and folders it may touch. You see it before you install, and gate4ai enforces it: a store connector has no network of its own, it reaches sites only through your Browser and files only through your Files.",
 	CatalogSearch:        "Search connectors",
 	CatalogSearchButton:  "Search",
 	CatalogAll:           "All",
@@ -237,7 +238,8 @@ var EnTr = Tr{
 	ConnectorCapsLead:    "Everything else is blocked by gate4ai. Your rules can narrow this further, never widen it.",
 	ConnectorInstall:     "Install",
 	ConnectorInstallLead: "gate4ai shows these capabilities and asks for your consent before installing.",
-	ConnectorNative:      "A native package: a separate program without a sandbox, with your user's rights. The store accepts native packages only from gate4.ai.",
+	CatalogBuiltin:       "Built into gate4ai",
+	CatalogBuiltinLead:   "Browser and Files are part of gate4ai itself: nothing to install, nothing to remove. Your two access lists, sites and folders, decide what they and every connector may touch.",
 	ConnectorOpen:        "Open in gate4.ai",
 	ConnectorOpenNote:    "if gate4.ai is running on this computer",
 	ConnectorTechnical:   "Technical",
@@ -290,7 +292,7 @@ var RuTr = Tr{
 	InstallNextReadme:    "Удобнее в терминале? Читайте README",
 	InstallLatest:        "Последний релиз",
 	CatalogTitle:         "Коннекторы",
-	CatalogLead:          "Почта, файлы, браузер: каждый коннектор заранее объявляет, к чему он может прикоснуться. Вы видите это до установки, а gate4ai следит, чтобы он не вышел за эти рамки.",
+	CatalogLead:          "Коннекторы к сайтам и сервисам: каждый заранее объявляет, к каким сайтам и папкам он может прикоснуться. Вы видите это до установки, а gate4ai следит, чтобы он не вышел за эти рамки: у коннектора из магазина нет своей сети, на сайты он ходит только через ваш Браузер, к файлам — только через ваши Файлы.",
 	CatalogSearch:        "Поиск коннекторов",
 	CatalogSearchButton:  "Найти",
 	CatalogAll:           "Все",
@@ -312,7 +314,8 @@ var RuTr = Tr{
 	ConnectorCapsLead:    "Всё остальное gate4ai блокирует. Ваши правила могут сузить этот список, но не расширить.",
 	ConnectorInstall:     "Установка",
 	ConnectorInstallLead: "Перед установкой gate4ai покажет эти возможности и спросит согласие.",
-	ConnectorNative:      "Нативный пакет: отдельная программа без песочницы, с правами вашего пользователя. Магазин принимает нативные пакеты только от gate4.ai.",
+	CatalogBuiltin:       "Встроено в gate4ai",
+	CatalogBuiltinLead:   "Браузер и Файлы — часть самого gate4ai: ставить и удалять нечего. Два ваших списка доступа, сайты и папки, решают, к чему могут прикоснуться они и любой коннектор.",
 	ConnectorOpen:        "Открыть в gate4.ai",
 	ConnectorOpenNote:    "если gate4.ai запущен на этом компьютере",
 	ConnectorTechnical:   "Технически",
