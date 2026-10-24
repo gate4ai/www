@@ -251,7 +251,7 @@ func TestScriptsAndLatest(t *testing.T) {
 		t.Error("install.ps1")
 	}
 	for _, want := range []string{"GATE4AI_NO_START", "GATE4AI_NO_OPEN", "service", "& $exe ui",
-		"$env:CI", "Next: gate4ai ui   # opens the setup wizard in your browser"} {
+		"$env:CI", "Next: gate4ai ui   # opens the setup wizard in your browser", "GATE4AI_INSTALL_DEPS", "GATE4AI_NO_BROWSER", "'browser', 'setup'", "'--no-browser'"} {
 		if !strings.Contains(r.body, want) {
 			t.Errorf("install.ps1: no %q", want)
 		}
