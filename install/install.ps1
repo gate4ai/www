@@ -188,7 +188,7 @@ function Install-Gate4ai {
         if ($opened) {
             Write-Host 'The Web UI is open in your browser: sign in with the password above, then the setup wizard starts. Open it again any time: gate4ai ui'
         } elseif ($running) {
-            try { & $exe ui --print | Out-Null } catch {}
+            try { & $exe ui --print | Out-Null } catch { $null = $_ }
             Write-Host 'Open the address above in a browser and sign in with the password above (save it; it is shown until the first sign-in). Then the setup wizard starts.'
         } else {
             Write-Host 'Next: gate4ai ui   # prints the Web UI address and password, opens the setup wizard in your browser'
