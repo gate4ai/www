@@ -194,7 +194,7 @@ func TestInstallCommandByOS(t *testing.T) {
 func TestInstallPageNextStep(t *testing.T) {
 	a := testApp(t, true)
 	for path, wants := range map[string][]string{
-		"/install":    {"Next: run gate4ai ui", "setup wizard opens in your browser", "For administrators"},
+		"/install":    {"Next: run gate4ai ui", "the setup wizard opens", "password the installer printed", "For administrators"},
 		"/ru/install": {"Дальше: запустите gate4ai ui", "мастер настройки", "Для администраторов"},
 	} {
 		r := get(a, path)
@@ -245,7 +245,7 @@ func TestScriptsAndLatest(t *testing.T) {
 	}
 	// Автозапуск по умолчанию, отказ — GATE4AI_NO_START; мастер в браузере — gate4ai ui, отказ — GATE4AI_NO_OPEN.
 	for _, want := range []string{"GATE4AI_NO_START", "GATE4AI_NO_OPEN", "service install", `"$gate" ui`,
-		"WAYLAND_DISPLAY", "${CI:-}", "Next: gate4ai ui   # opens the setup wizard in your browser", "daemon restart",
+		"WAYLAND_DISPLAY", "${CI:-}", "Next: gate4ai ui   # prints the Web UI address and password", "sign in with the password above", `"$gate" ui --print`, "daemon restart",
 		// Браузер агентов: проверка, установка с согласия (ответ — из терминала), отказ от браузера.
 		"GATE4AI_INSTALL_DEPS", "GATE4AI_NO_BROWSER", `browser setup </dev/tty`, "browser setup --dry-run"} {
 		if !strings.Contains(r.body, want) {
@@ -260,7 +260,7 @@ func TestScriptsAndLatest(t *testing.T) {
 		t.Error("install.ps1")
 	}
 	for _, want := range []string{"GATE4AI_NO_START", "GATE4AI_NO_OPEN", "service", "& $exe ui",
-		"$env:CI", "Next: gate4ai ui   # opens the setup wizard in your browser", "GATE4AI_INSTALL_DEPS", "GATE4AI_NO_BROWSER", "'browser', 'setup'"} {
+		"$env:CI", "Next: gate4ai ui   # prints the Web UI address and password", "sign in with the password above", "& $exe ui --print", "GATE4AI_INSTALL_DEPS", "GATE4AI_NO_BROWSER", "'browser', 'setup'"} {
 		if !strings.Contains(r.body, want) {
 			t.Errorf("install.ps1: no %q", want)
 		}
