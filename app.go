@@ -26,6 +26,8 @@ var (
 	installSh string
 	//go:embed install/install.ps1
 	installPs1 string
+	//go:embed install/install-agent.md
+	installAgent string
 	//go:embed static/site.css
 	siteCSS string
 	//go:embed static/site.js
@@ -139,6 +141,8 @@ func (a *App) Handler() http.Handler {
 		notFound(w, lang)
 	})
 
+	// Документ для агента: /install.md и /install с Accept без text/html (curl, агент).
+	mux.HandleFunc("GET /install.md", script(installAgent))
 	mux.HandleFunc("GET /install.sh", script(installSh))
 	mux.HandleFunc("GET /install.ps1", script(installPs1))
 	mux.HandleFunc("GET /latest", a.latestTag)
@@ -185,6 +189,16 @@ func text(w http.ResponseWriter, status int, body string) {
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(status)
 	_, _ = w.Write([]byte(body))
+}
+
+// wantsText — клиент просит текст, а не страницу: Accept без text/html и */*
+// (curl -H 'Accept: text/plain', агент читает документ, а не вёрстку).
+func wantsText(r *http.Request) bool {
+	acc := r.Header.Get("Accept")
+	if acc == "" || strings.Contains(acc, "text/html") || strings.Contains(acc, "*/*") {
+		return false
+	}
+	return strings.Contains(acc, "text/plain") || strings.Contains(acc, "text/markdown")
 }
 
 func script(body string) http.HandlerFunc {
@@ -269,6 +283,10 @@ type installView struct {
 
 func (a *App) install(lang Lang) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if wantsText(r) {
+			script(installAgent)(w, r)
+			return
+		}
 		t := lang.Tr()
 		w.Header().Set("Vary", "User-Agent")
 		render(w, http.StatusOK, "install", installView{

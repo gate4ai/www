@@ -27,8 +27,10 @@
 #                             commands; at a terminal it asks first; without a
 #                             terminal (an agent runs the installer) it installs
 #                             by itself when it is root or sudo works without a
-#                             password (sudo -n), otherwise it only prints the
-#                             commands for root.
+#                             password (sudo -n); without root it downloads Chrome
+#                             for Testing into gate4ai's data folder (gate4ai
+#                             browser setup --user) and prints the packages that
+#                             still need root.
 #   GATE4AI_NO_BROWSER=1      do not check Chrome now (the browser is built into
 #                             gate4ai; check later with gate4ai browser setup).
 #
@@ -258,11 +260,12 @@ main() {
       GATE4AI_OUTPUT=table "$gate" browser setup --yes || browser_ok=""
     elif [ -t 2 ] && [ -z "${CI:-}" ] && (exec </dev/tty) 2>/dev/null; then
       GATE4AI_OUTPUT=table "$gate" browser setup </dev/tty || browser_ok=""
-    elif [ "$(id -u)" = 0 ] || sudo -n true 2>/dev/null; then
-      GATE4AI_OUTPUT=table "$gate" browser setup --yes || browser_ok=""
     else
-      GATE4AI_OUTPUT=table "$gate" browser setup --dry-run || browser_ok=""
-      [ -n "$browser_ok" ] || say "No terminal to ask and no root: run the commands above as root (or with sudo), then gate4ai browser setup to check."
+      # No terminal: root (or sudo -n) installs the packages; without root Chrome for
+      # Testing goes into gate4ai's data folder and the packages it still needs are
+      # printed for root (gate4ai browser setup --dry-run — only the check).
+      GATE4AI_OUTPUT=table "$gate" browser setup --yes || browser_ok=""
+      [ -n "$browser_ok" ] || { [ "$(id -u)" = 0 ] || sudo -n true 2>/dev/null || say "No terminal to ask and no root: run the commands above as root (or with sudo), then gate4ai browser setup to check."; }
     fi
     [ -n "$browser_ok" ] || say "Agents get browser_unavailable until Chrome and its libraries are installed: gate4ai browser setup"
   fi

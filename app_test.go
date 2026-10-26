@@ -260,6 +260,22 @@ func TestScriptsAndLatest(t *testing.T) {
 	if strings.Contains(r.body, "Next steps:") || strings.Contains(r.body, "GATE4AI_START") {
 		t.Error("install.sh: one next step, no GATE4AI_START")
 	}
+	// Документ для агента: /install.md и /install с Accept: text/plain.
+	r = get(a, "/install.md")
+	if r.status != http.StatusOK || r.h.Get("Content-Type") != "text/plain; charset=utf-8" || !strings.Contains(r.body, "# Installing gate4ai for a user") {
+		t.Fatalf("install.md: %d %v", r.status, r.h)
+	}
+	for _, want := range []string{"Web UI: http://127.0.0.1:7431/", "From the internet:", "gate4ai ui --print --json", "To run Chrome, install:", "gh attestation verify", "cosign verify-blob", "ghcr.io/gate4ai/gate4ai", "GATE4AI_UI_WAIT", "do not suggest an ssh tunnel"} {
+		if !strings.Contains(r.body, want) {
+			t.Errorf("install.md: no %q", want)
+		}
+	}
+	if r = get(a, "/install", "Accept", "text/plain"); r.h.Get("Content-Type") != "text/plain; charset=utf-8" || !strings.Contains(r.body, "# Installing gate4ai for a user") {
+		t.Errorf("/install with Accept: text/plain: %v", r.h)
+	}
+	if r = get(a, "/install", "Accept", "text/html,*/*"); !strings.Contains(r.h.Get("Content-Type"), "text/html") {
+		t.Errorf("/install for a browser: %v", r.h)
+	}
 	r = get(a, "/install.ps1")
 	if r.status != http.StatusOK || !strings.HasSuffix(strings.TrimRight(r.body, "\r\n"), "Install-Gate4ai") {
 		t.Error("install.ps1")
