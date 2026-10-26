@@ -19,18 +19,30 @@
 #                             generated password the installer prints, then the
 #                             setup wizard).
 #   GATE4AI_INSTALL_DEPS=1    install what the browser of agents needs without
-#                             asking: Google Chrome, on Linux without a screen
-#                             also Xvfb (a virtual screen) and fonts (with sudo).
-#                             By default the installer checks them, prints the
-#                             commands and, at a terminal, asks first.
+#                             asking: Google Chrome (or the libraries a Chromium
+#                             found in a Playwright/Puppeteer cache lacks), on
+#                             Linux without a screen also Xvfb (a virtual screen)
+#                             and fonts (with sudo). By default the installer
+#                             checks them, prints exactly what is missing and the
+#                             commands; at a terminal it asks first; without a
+#                             terminal (an agent runs the installer) it installs
+#                             by itself when it is root or sudo works without a
+#                             password (sudo -n), otherwise it only prints the
+#                             commands for root.
 #   GATE4AI_NO_BROWSER=1      do not check Chrome now (the browser is built into
 #                             gate4ai; check later with gate4ai browser setup).
 #
 # Downloads the release from GitHub, checks sha256 checksums (and the cosign
 # signature when cosign is installed: made by release.yml of gate4ai/gate4ai
 # on a v* tag) and only then installs. Never touches your configuration or
-# data and calls sudo only to install Chrome or Xvfb after you agree
-# (gate4ai browser setup).
+# data and calls sudo only to install Chrome, its libraries or Xvfb after you
+# agree (gate4ai browser setup).
+#
+# It ends with the Web UI address, the generated password and the address from
+# the internet (https://<id>.relay.gate4.ai/ui/, once the device is registered —
+# the installer waits for it a little), as "Label: value" lines on stdout, so an
+# agent that ran the installer can pass them to the user. Later: gate4ai ui
+# --print (--json for a program).
 #
 # The whole script is one function called on the last line: a download cut
 # short by the network does not run half of it.
@@ -231,8 +243,11 @@ main() {
   gate="$INSTALL_DIR/gate4ai"
 
   # --- the browser of agents: Chrome, on a server also a virtual screen ---
-  # gate4ai browser setup checks them and installs what is missing only after
-  # a yes (its question reads the terminal: stdin is this script under curl | sh).
+  # gate4ai browser setup checks them (Chrome and its shared libraries, Xvfb,
+  # fonts) and installs what is missing only after a yes (its question reads the
+  # terminal: stdin is this script under curl | sh). Without a terminal there is
+  # nobody to ask: it installs by itself when root is at hand (root, or sudo
+  # without a password), otherwise it prints exactly what to install and how.
   say ""
   if [ -n "$NO_BROWSER" ]; then
     say "Chrome is not checked (GATE4AI_NO_BROWSER). Agents get browser_unavailable until it is installed: gate4ai browser setup"
@@ -243,10 +258,13 @@ main() {
       GATE4AI_OUTPUT=table "$gate" browser setup --yes || browser_ok=""
     elif [ -t 2 ] && [ -z "${CI:-}" ] && (exec </dev/tty) 2>/dev/null; then
       GATE4AI_OUTPUT=table "$gate" browser setup </dev/tty || browser_ok=""
+    elif [ "$(id -u)" = 0 ] || sudo -n true 2>/dev/null; then
+      GATE4AI_OUTPUT=table "$gate" browser setup --yes || browser_ok=""
     else
       GATE4AI_OUTPUT=table "$gate" browser setup --dry-run || browser_ok=""
+      [ -n "$browser_ok" ] || say "No terminal to ask and no root: run the commands above as root (or with sudo), then gate4ai browser setup to check."
     fi
-    [ -n "$browser_ok" ] || say "Agents get browser_unavailable until Chrome is installed: gate4ai browser setup"
+    [ -n "$browser_ok" ] || say "Agents get browser_unavailable until Chrome and its libraries are installed: gate4ai browser setup"
   fi
   running=""
   if [ -n "$NO_START" ]; then
@@ -268,6 +286,11 @@ main() {
     if "$gate" service install $no_tray_flag >/dev/null; then
       running=1
       say "The gate4ai daemon is running and starts at every login (gate4ai service status)."
+    elif "$gate" daemon start >/dev/null 2>&1; then
+      # No autostart here (no systemd --user session, no launchd): the daemon
+      # runs until logout anyway, so the address and the password come now.
+      running=1
+      say "Could not set up the autostart (gate4ai service install); the daemon is started for this session (gate4ai daemon start)."
     else
       say "Could not set up the autostart: gate4ai ui starts the daemon for this session."
     fi
@@ -279,17 +302,20 @@ main() {
     linux) [ -z "${DISPLAY:-}${WAYLAND_DISPLAY:-}" ] || graphical=1 ;;
     darwin) [ -n "${SSH_CONNECTION:-}${SSH_TTY:-}" ] || graphical=1 ;;
   esac
-  # The Web UI password is generated by the daemon at its first start: gate4ai ui
-  # prints it (stderr) until the first sign-in, so the owner sees it here even
-  # without a graphical session. Lost it: gate4ai ui --reset-password.
+  # The Web UI password is generated by the daemon at its first start; gate4ai ui
+  # --print prints it on stdout ("Password: …") until the first sign-in, with the
+  # address from the internet ("From the internet: https://…/ui/") once the device
+  # is registered on the relay — it waits for that up to GATE4AI_UI_WAIT (default
+  # 3m; 0 — do not wait). Lost the password: gate4ai ui --reset-password.
   say ""
+  ui_wait="${GATE4AI_UI_WAIT:-3m}"
   if [ -n "$running" ] && [ -n "$graphical" ] && [ -z "${CI:-}" ] && [ -z "$NO_OPEN" ] &&
-    "$gate" ui; then
+    GATE4AI_OUTPUT=table "$gate" ui --wait "$ui_wait"; then
     say "The Web UI is open in your browser: sign in with the password above, then the setup wizard starts. Open it again any time: gate4ai ui"
-  elif [ -n "$running" ] && "$gate" ui --print >/dev/null; then
-    say "Open the address above in a browser on this computer and sign in with the password above (save it; it is shown until the first sign-in). Then the setup wizard starts."
+  elif [ -n "$running" ] && GATE4AI_OUTPUT=table "$gate" ui --print --wait "$ui_wait"; then
+    say "Open the Web UI address above in a browser on this computer, or the internet address from any device, and sign in with the password above (save it; it is shown until the first sign-in). Then the setup wizard starts. Again later: gate4ai ui --print"
   else
-    say "Next: gate4ai ui   # prints the Web UI address and password, opens the setup wizard in your browser"
+    say "Next: gate4ai ui --print   # prints the Web UI address, the password and the address from the internet (gate4ai ui opens the setup wizard in your browser)"
   fi
 }
 

@@ -198,7 +198,9 @@ func TestInstallPageNextStep(t *testing.T) {
 		"/ru/install": {"Дальше: запустите gate4ai ui", "мастер настройки", "Для администраторов"},
 	} {
 		r := get(a, path)
-		wants = append(wants, `id="next"`, `data-copy="gate4ai ui"`, "#readme", "GATE4AI_NO_START=1", "GATE4AI_NO_OPEN=1", "GATE4AI_NO_TRAY=1")
+		wants = append(wants, `id="next"`, `data-copy="gate4ai ui"`, "#readme", "GATE4AI_NO_START=1", "GATE4AI_NO_OPEN=1", "GATE4AI_NO_TRAY=1",
+			// Установка агентом: адреса и пароль в stdout, gate4ai ui --print --json, адрес из интернета вместо ssh.
+			"GATE4AI_UI_WAIT=3m", `id="agents"`, "gate4ai ui --print --json", "remote_cert", "From the internet:")
 		for _, want := range wants {
 			if !strings.Contains(r.body, want) {
 				t.Errorf("%s: no %q", path, want)
@@ -245,9 +247,12 @@ func TestScriptsAndLatest(t *testing.T) {
 	}
 	// Автозапуск по умолчанию, отказ — GATE4AI_NO_START; мастер в браузере — gate4ai ui, отказ — GATE4AI_NO_OPEN.
 	for _, want := range []string{"GATE4AI_NO_START", "GATE4AI_NO_OPEN", "service install", `"$gate" ui`,
-		"WAYLAND_DISPLAY", "${CI:-}", "Next: gate4ai ui   # prints the Web UI address and password", "sign in with the password above", `"$gate" ui --print`, "daemon restart",
-		// Браузер агентов: проверка, установка с согласия (ответ — из терминала), отказ от браузера.
-		"GATE4AI_INSTALL_DEPS", "GATE4AI_NO_BROWSER", `browser setup </dev/tty`, "browser setup --dry-run"} {
+		"WAYLAND_DISPLAY", "${CI:-}", "Next: gate4ai ui --print   # prints the Web UI address, the password and the address from the internet", "sign in with the password above", `"$gate" ui --print --wait "$ui_wait"`, "daemon restart",
+		// Без автозапуска daemon всё равно поднимается на эту сессию: адрес и пароль печатаются сразу.
+		`"$gate" daemon start`, "GATE4AI_UI_WAIT",
+		// Браузер агентов: проверка, установка с согласия (ответ — из терминала), без терминала — сама при root
+		// или sudo без пароля, иначе только команды; отказ от браузера.
+		"GATE4AI_INSTALL_DEPS", "GATE4AI_NO_BROWSER", `browser setup </dev/tty`, "browser setup --dry-run", "sudo -n true", "browser setup --yes"} {
 		if !strings.Contains(r.body, want) {
 			t.Errorf("install.sh: no %q", want)
 		}
