@@ -51,10 +51,12 @@ func main() {
 		Sources:       NewSources(envOr("GATE4AI_WWW_REGISTRY_URL", DefaultRegistry), list(envOr("GATE4AI_WWW_REGISTRY_KEYS", DefaultRegistryKey)), envOr("GATE4AI_WWW_RELEASES_REPO", DefaultReleasesRepo)),
 		WebhookSecret: env("GATE4AI_WWW_WEBHOOK_SECRET"),
 		CanonicalHost: env("GATE4AI_WWW_CANONICAL_HOST"),
+		Analytics:     NewAnalytics(env("GATE4AI_WWW_GA_ID"), env("GATE4AI_WWW_GA_SECRET"), env("GATE4AI_WWW_GA_ENDPOINT"), envOr("GATE4AI_WWW_SITE", "https://gate4.ai")),
 	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	go app.Refresh(ctx)
+	go app.Analytics.Run(ctx)
 
 	addr := envOr("GATE4AI_WWW_LISTEN", "127.0.0.1:8080")
 	srv := &http.Server{Addr: addr, Handler: app.Handler(), ReadHeaderTimeout: 10 * time.Second,

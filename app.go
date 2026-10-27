@@ -46,8 +46,9 @@ const csp = "default-src 'none'; script-src 'self'; style-src 'self'; img-src 's
 // App — состояние сайта: каталог и последняя версия ядра — только в памяти.
 type App struct {
 	Sources       *Sources
-	WebhookSecret string // "" — POST /hooks/registry выключен
-	CanonicalHost string // "" — без редиректа
+	WebhookSecret string     // "" — POST /hooks/registry выключен
+	CanonicalHost string     // "" — без редиректа
+	Analytics     *Analytics // nil — посещаемость не считается
 
 	catalog atomic.Pointer[Catalog]
 	latest  atomic.Pointer[string]
@@ -156,7 +157,7 @@ func (a *App) Handler() http.Handler {
 		text(w, http.StatusOK, "User-agent: *\nAllow: /\nSitemap: https://gate4.ai/sitemap.xml\n")
 	})
 	mux.HandleFunc("GET /sitemap.xml", a.sitemap)
-	return securityHeaders(a.canonical(mux))
+	return securityHeaders(a.canonical(a.Analytics.Middleware(mux)))
 }
 
 func securityHeaders(next http.Handler) http.Handler {
