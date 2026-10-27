@@ -3,9 +3,9 @@
 //
 // Что уходит в GA: путь страницы, реферер, IP и User-Agent посетителя
 // (как при обычном gtag.js — для страны и типа устройства), язык из
-// Accept-Language. Идентификатор посетителя — хэш IP и User-Agent с солью,
-// которая меняется раз в сутки: на следующий день тот же человек — новый
-// посетитель, ничего постоянного не хранится ни у нас, ни в браузере.
+// Accept-Language. Идентификатор посетителя — хэш IP и User-Agent с солью
+// из секрета GA: постоянный, пока у посетителя тот же адрес и браузер;
+// ничего не хранится ни у нас, ни в браузере.
 // Заголовки DNT: 1 и Sec-GPC: 1 отключают учёт. Поисковые боты не считаются.
 
 package main
@@ -13,7 +13,6 @@ package main
 import (
 	"bytes"
 	"context"
-	"crypto/rand"
 	"crypto/sha256"
 	"encoding/binary"
 	"encoding/json"
@@ -37,7 +36,6 @@ type Analytics struct {
 
 	client http.Client
 	queue  chan []byte
-	seed   [32]byte // случайное зерно процесса: соль суток = sha256(seed, сутки)
 }
 
 // NewAnalytics — nil, если идентификатор или секрет не заданы.
@@ -50,7 +48,6 @@ func NewAnalytics(id, secret, endpoint, site string) *Analytics {
 	}
 	a := &Analytics{MeasurementID: id, APISecret: secret, Endpoint: endpoint, Site: strings.TrimSuffix(site, "/"),
 		client: http.Client{Timeout: 10 * time.Second}, queue: make(chan []byte, 256)}
-	_, _ = rand.Read(a.seed[:])
 	return a
 }
 
@@ -147,7 +144,7 @@ func (a *Analytics) payload(r *http.Request, now time.Time, event string, params
 		p[k] = v
 	}
 	body := map[string]any{
-		"client_id":  a.visitor(ip, ua, now, 24*time.Hour),
+		"client_id":  a.visitor(ip, ua, now, 0),
 		"user_agent": ua,
 		"events":     []map[string]any{{"name": event, "params": p}},
 	}
@@ -160,14 +157,14 @@ func (a *Analytics) payload(r *http.Request, now time.Time, event string, params
 	return body
 }
 
-// visitor — «число.число» из хэша (соль суток, IP, User-Agent, окно времени):
-// client_id при окне в сутки, session_id — в 30 минут.
+// visitor — «число.число» из хэша (секрет GA как соль, IP, User-Agent и окно
+// времени): client_id без окна — постоянный, session_id — окно в 30 минут.
 func (a *Analytics) visitor(ip, ua string, now time.Time, window time.Duration) string {
 	h := sha256.New()
-	h.Write(a.seed[:])
-	_ = binary.Write(h, binary.BigEndian, now.Unix()/86400)
-	h.Write([]byte(ip + "\x00" + ua + "\x00"))
-	_ = binary.Write(h, binary.BigEndian, now.Unix()/int64(window/time.Second))
+	h.Write([]byte(a.APISecret + "\x00" + ip + "\x00" + ua + "\x00"))
+	if window > 0 {
+		_ = binary.Write(h, binary.BigEndian, now.Unix()/int64(window/time.Second))
+	}
 	sum := h.Sum(nil)
 	return strconv.FormatUint(uint64(binary.BigEndian.Uint32(sum[:4])), 10) + "." +
 		strconv.FormatUint(uint64(binary.BigEndian.Uint32(sum[4:8])), 10)

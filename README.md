@@ -37,7 +37,7 @@ gofmt -l . && go vet ./... && go test ./...
 | `GATE4AI_WWW_WEBHOOK_SECRET` | — | включает `POST /hooks/registry` с `Authorization: Bearer <секрет>` |
 | `GATE4AI_WWW_REGISTRY_URL`, `GATE4AI_WWW_REGISTRY_KEYS` | registry gate4ai и его ключ | источник каталога |
 | `GATE4AI_WWW_RELEASES_REPO` | `gate4ai/gate4ai` | откуда брать `/latest` |
-| `GATE4AI_WWW_GA_ID`, `GATE4AI_WWW_GA_SECRET` | — | поток GA4 (`G-…`) и его секрет Measurement Protocol (Admin → Data Streams → поток → Measurement Protocol API secrets); обе — включают учёт посещаемости с сервера: `page_view` для HTML-страниц, `install_script` для `/install.sh`, `/install.ps1`, `/install.md` и `/install` с `Accept: text/plain`. В GA уходят путь, внешний реферер, IP и User-Agent посетителя, язык; `client_id` — хэш IP и User-Agent с суточной солью. Без переменных — ничего не отправляется |
+| `GATE4AI_WWW_GA_ID`, `GATE4AI_WWW_GA_SECRET` | — | поток GA4 (`G-…`) и его секрет Measurement Protocol (Admin → Data Streams → поток → Measurement Protocol API secrets); обе — включают учёт посещаемости с сервера: `page_view` для HTML-страниц, `install_script` для `/install.sh`, `/install.ps1`, `/install.md` и `/install` с `Accept: text/plain`. В GA уходят путь, внешний реферер, IP и User-Agent посетителя, язык; `client_id` — хэш IP и User-Agent с солью из секрета (постоянный, пока те же адрес и браузер). Без переменных — ничего не отправляется |
 | `GATE4AI_WWW_GA_ENDPOINT`, `GATE4AI_WWW_SITE` | `https://www.google-analytics.com/mp/collect`, `https://gate4.ai` | куда слать события и адрес сайта для `page_location` (для тестов) |
 
 Каталога состояния нет: индекс и версия живут в памяти и после перезапуска загружаются заново (до загрузки `/connectors` пишет, что каталог загружается, `/latest` отвечает 503).

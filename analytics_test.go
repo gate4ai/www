@@ -223,3 +223,19 @@ func TestAnalyticsQueueFull(t *testing.T) {
 		t.Fatal("Track blocks when the queue is full")
 	}
 }
+
+func TestAnalyticsClientIDIsStable(t *testing.T) {
+	req := httptest.NewRequest("GET", "/", nil)
+	req.Header.Set("User-Agent", "Mozilla/5.0 Firefox/130.0")
+	req.Header.Set("X-Forwarded-For", "203.0.113.7")
+	now := time.Now()
+	a := NewAnalytics("G-TEST", "secret", "", "https://gate4.ai")
+	b := NewAnalytics("G-TEST", "secret", "", "https://gate4.ai") // другой процесс, тот же секрет
+	id := a.payload(req, now, "page_view", nil)["client_id"]
+	if b.payload(req, now.Add(72*time.Hour), "page_view", nil)["client_id"] != id {
+		t.Error("client_id must not depend on the process or the day")
+	}
+	if NewAnalytics("G-TEST", "other", "", "").payload(req, now, "page_view", nil)["client_id"] == id {
+		t.Error("client_id must depend on the secret")
+	}
+}
