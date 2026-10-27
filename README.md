@@ -23,10 +23,13 @@ gofmt -l . && go vet ./... && go test ./...
 | `i18n.go` | языки, тексты общих страниц, ОС по User-Agent |
 | `templates/` | `index_en.html` и `index_ru.html` — тексты лендинга; остальные страницы общие |
 | `static/site.css` | одна тема на токенах (`:root`), тёмная и светлая по `prefers-color-scheme` |
+| `static/og-en.png`, `static/og-ru.png` | картинки превью ссылок (`og:image`, 1200×630) для Telegram и соцсетей; исходники — `static/og/og-*.svg`, после правки перерисовать: `sh static/og/render.sh` (Chrome, Pillow с libimagequant) |
 | `install/` | `install.sh` (POSIX sh) и `install.ps1` |
 | `deploy/` | `compose.yaml` (служба на сервере) и `deploy.sh` (выкладка из CI) |
 
-Маршруты: `/`, `/ru/…`, `/install`, `/install.sh`, `/install.ps1`, `/connectors`, `/connectors/<имя>`, `/connectors.json`, `/latest`, `/healthz`, `POST /hooks/registry`, `/sitemap.xml`, `/robots.txt`.
+Маршруты: `/`, `/ru/…`, `/install`, `/install.sh`, `/install.ps1`, `/connectors`, `/connectors/<имя>`, `/connectors.json`, `/latest`, `/healthz`, `POST /hooks/registry`, `/sitemap.xml`, `/robots.txt`, `/static/og-<lang>.png`.
+
+Каждая HTML-страница несёт Open Graph и Twitter Cards (`og:title`, `og:description`, `og:image` на языке страницы, `og:locale`, `twitter:card=summary_large_image`), чтобы ссылка в Telegram, X, Facebook, Slack разворачивалась в карточку с картинкой.
 
 ## Конфигурация (переменные окружения)
 

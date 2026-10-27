@@ -422,6 +422,38 @@ func TestHTMLIsEscaped(t *testing.T) {
 	}
 }
 
+// Превью ссылок в Telegram и соцсетях: Open Graph и Twitter Cards с абсолютной картинкой на языке страницы.
+func TestLinkPreview(t *testing.T) {
+	a := testApp(t, true)
+	for _, p := range []string{"/?lang=en", "/ru/", "/install", "/ru/install", "/connectors", "/ru/connectors", "/connectors/pagereader", "/ru/connectors/pagereader"} {
+		r := get(a, p)
+		if r.status != http.StatusOK {
+			t.Fatalf("%s: %d", p, r.status)
+		}
+		lang, locale, alt := "en", "en_US", "ru_RU"
+		if strings.HasPrefix(p, "/ru") {
+			lang, locale, alt = "ru", "ru_RU", "en_US"
+		}
+		for _, want := range []string{
+			`<meta property="og:title" content="`,
+			`<meta property="og:description" content="`,
+			`<meta property="og:site_name" content="gate4.ai">`,
+			`<meta property="og:locale" content="` + locale + `">`,
+			`<meta property="og:locale:alternate" content="` + alt + `">`,
+			`<meta property="og:image" content="https://gate4.ai/static/og-` + lang + `.png">`,
+			`<meta property="og:image:width" content="1200">`,
+			`<meta property="og:image:height" content="630">`,
+			`<meta property="og:image:alt" content="gate4.ai`,
+			`<meta name="twitter:card" content="summary_large_image">`,
+			`<meta name="twitter:image" content="https://gate4.ai/static/og-` + lang + `.png">`,
+		} {
+			if !strings.Contains(r.body, want) {
+				t.Errorf("%s: no %s", p, want)
+			}
+		}
+	}
+}
+
 func TestMiscRoutes(t *testing.T) {
 	a := testApp(t, true)
 	if r := get(a, "/healthz"); r.status != http.StatusOK || r.body != "ok" {
@@ -436,6 +468,16 @@ func TestMiscRoutes(t *testing.T) {
 	}
 	if r := get(a, "/favicon.svg"); r.status != http.StatusOK || r.h.Get("Content-Type") != "image/svg+xml" {
 		t.Fatal(r.status)
+	}
+	for _, p := range []string{"/static/og-en.png", "/static/og-ru.png"} {
+		r := get(a, p)
+		if r.status != http.StatusOK || r.h.Get("Content-Type") != "image/png" || !strings.HasPrefix(r.body, "\x89PNG") {
+			t.Fatalf("%s: %d %s", p, r.status, r.h.Get("Content-Type"))
+		}
+		// Отдельный ассет вне бюджета страницы, но Telegram и соцсети качают его на каждое превью.
+		if len(r.body) >= 200_000 {
+			t.Errorf("%s: %d bytes, keep the preview image under 200 KB", p, len(r.body))
+		}
 	}
 	if r := get(a, "/robots.txt"); !strings.Contains(r.body, "Sitemap: https://gate4.ai/sitemap.xml") {
 		t.Fatal(r.body)

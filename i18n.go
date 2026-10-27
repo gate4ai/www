@@ -27,6 +27,14 @@ func (l Lang) Prefix() string {
 
 func (l Lang) Code() string { return string(l) }
 
+// Locale — og:locale: язык и регион, как ждут Facebook и Telegram.
+func (l Lang) Locale() string {
+	if l == Ru {
+		return "ru_RU"
+	}
+	return "en_US"
+}
+
 func (l Lang) Tr() *Tr {
 	if l == Ru {
 		return &RuTr
@@ -95,6 +103,7 @@ type Tr struct {
 	NavDocs              string
 	NavInstall           string
 	OtherLangName        string
+	OgImageAlt           string // alt картинки превью ссылки (og:image)
 	Skip                 string
 	Copy                 string
 	Copied               string
@@ -184,6 +193,7 @@ var EnTr = Tr{
 	NavDocs:        "Docs",
 	NavInstall:     "Install",
 	OtherLangName:  "Русский",
+	OgImageAlt:     "gate4.ai: your AI agents get only what you allow. Allow, ask, deny.",
 	Skip:           "Skip to content",
 	Copy:           "Copy",
 	Copied:         "Copied",
@@ -260,6 +270,7 @@ var RuTr = Tr{
 	NavDocs:        "Документация",
 	NavInstall:     "Установить",
 	OtherLangName:  "English",
+	OgImageAlt:     "gate4.ai: AI-агенты получают только то, что вы разрешили. Разрешить, спросить, запретить.",
 	Skip:           "К содержанию",
 	Copy:           "Копировать",
 	Copied:         "Скопировано",
