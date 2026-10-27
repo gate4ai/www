@@ -33,6 +33,13 @@
 #                             still need root.
 #   GATE4AI_NO_BROWSER=1      do not check Chrome now (the browser is built into
 #                             gate4ai; check later with gate4ai browser setup).
+#   GATE4AI_NO_RELAY=1        do not turn on access from the internet. By default
+#                             the daemon registers this computer on relay.gate4.ai
+#                             and gets https://<id>.relay.gate4.ai: the relay sees
+#                             only a random device id and encrypted traffic (TLS
+#                             passthrough), nothing else leaves the computer. With
+#                             this variable the daemon starts with internet access
+#                             off (relay.disabled); later: gate4ai relay on | off.
 #
 # Downloads the release from GitHub, checks sha256 checksums (and the cosign
 # signature when cosign is installed: made by release.yml of gate4ai/gate4ai
@@ -43,7 +50,8 @@
 # It ends with the Web UI address, the generated password and the address from
 # the internet (https://<id>.relay.gate4.ai/ui/, once the device is registered —
 # the installer waits for it a little), as "Label: value" lines on stdout, so an
-# agent that ran the installer can pass them to the user. Later: gate4ai ui
+# agent that ran the installer can pass them to the user; under the internet
+# address — what the relay sees and how to turn it off. Later: gate4ai ui
 # --print (--json for a program).
 #
 # The whole script is one function called on the last line: a download cut
@@ -62,6 +70,7 @@ main() {
   NO_OPEN="${GATE4AI_NO_OPEN:-}"
   INSTALL_DEPS="${GATE4AI_INSTALL_DEPS:-}"
   NO_BROWSER="${GATE4AI_NO_BROWSER:-}"
+  NO_RELAY="${GATE4AI_NO_RELAY:-}"
 
   say() { printf '%s\n' "$*"; }
   fail() {
@@ -285,17 +294,30 @@ main() {
     say ""
     no_tray_flag=""
     [ -n "$tray" ] || no_tray_flag="--no-tray"
+    # GATE4AI_NO_RELAY: the daemon must not register on the relay even once, so it
+    # starts without the automatic registration and then the owner's "off" is
+    # written to the configuration (relay.disabled), which survives restarts
+    # and updates; gate4ai relay on turns it on later.
+    no_relay_flag=""
+    [ -z "$NO_RELAY" ] || no_relay_flag="-- --relay-auto=false"
     # shellcheck disable=SC2086
-    if "$gate" service install $no_tray_flag >/dev/null; then
+    if "$gate" service install $no_tray_flag $no_relay_flag >/dev/null; then
       running=1
       say "The gate4ai daemon is running and starts at every login (gate4ai service status)."
-    elif "$gate" daemon start >/dev/null 2>&1; then
+    elif "$gate" daemon start ${no_relay_flag#-- } >/dev/null 2>&1; then
       # No autostart here (no systemd --user session, no launchd): the daemon
       # runs until logout anyway, so the address and the password come now.
       running=1
       say "Could not set up the autostart (gate4ai service install); the daemon is started for this session (gate4ai daemon start)."
     else
       say "Could not set up the autostart: gate4ai ui starts the daemon for this session."
+    fi
+    if [ -n "$running" ] && [ -n "$NO_RELAY" ]; then
+      if "$gate" relay off >/dev/null 2>&1; then
+        say "Access from the internet is off (GATE4AI_NO_RELAY): this computer is not registered on relay.gate4.ai. Turn it on later: gate4ai relay on"
+      else
+        say "Could not turn access from the internet off (GATE4AI_NO_RELAY); do it yourself: gate4ai relay off"
+      fi
     fi
   fi
 

@@ -28,6 +28,7 @@ curl -fsSL https://gate4.ai/install.sh | GATE4AI_NO_TRAY=1 sh
 The installer asks nothing. What it does and the variables that change it:
 
 - Puts `gate4ai` into `~/.local/bin` (`GATE4AI_INSTALL_DIR`), no root.
+- **Turns on access from the internet** (the daemon registers this computer on `relay.gate4.ai` and gets `https://<id>.relay.gate4.ai`). This is expected, not a leak: the relay sees only a random device id and encrypted traffic (TLS passthrough, the certificate is issued to this computer), no data, no account; nothing else leaves the computer, there is no telemetry and no update check. The Web UI on that address asks the password; API of the owner is not there. The project counts its users by these registrations. `GATE4AI_NO_RELAY=1` — install with it off (the daemon never registers); later `gate4ai relay off` / `gate4ai relay on`. Details: section 7.
 - Turns on the autostart (`gate4ai service install`: systemd --user / launchd); if that is impossible it starts the daemon for this session. `GATE4AI_NO_START=1` — neither.
 - **Chrome for the browser of agents** (`gate4ai browser setup`): finds Chrome in PATH, snap, flatpak, Playwright and Puppeteer caches (`GATE4AI_CHROME` — your own path), checks its shared libraries with `ldd`, Xvfb and fonts. Without a terminal it installs what is missing by itself when it is root or `sudo -n` works; otherwise it downloads Chrome for Testing into gate4ai's data folder (no root) and prints exactly which packages still need root, e.g. `To run Chrome, install: libnss3 libgbm1.` — **tell the user that list verbatim**. `GATE4AI_INSTALL_DEPS=1` — install without asking even at a terminal; `GATE4AI_NO_BROWSER=1` — skip Chrome now.
 - Ends with three lines on stdout:
@@ -38,7 +39,7 @@ The installer asks nothing. What it does and the variables that change it:
   From the internet: https://<id>.relay.gate4.ai/ui/
   ```
 
-  The internet address appears after the device registers on the relay and gets a certificate; the installer waits for it up to `GATE4AI_UI_WAIT` (default `3m`, `0` — do not wait). If the certificate could not be issued yet, the address works on a temporary self-signed certificate and the line says so: the browser warns about it, gate4ai replaces it with the real one by itself.
+  The internet address appears after the device registers on the relay and gets a certificate; the installer waits for it up to `GATE4AI_UI_WAIT` (default `3m`, `0` — do not wait). If the certificate could not be issued yet, the address works on a temporary self-signed certificate and the line says so: the browser warns about it, gate4ai replaces it with the real one by itself. Under the address a line says what the relay sees and how to turn it off (`gate4ai relay off`; at install `GATE4AI_NO_RELAY=1`).
 
 ## 4. What to tell the user
 
@@ -70,3 +71,14 @@ The image has Chrome, Xvfb and fonts; it is signed with cosign (`cosign verify g
 ## 6. Connect yourself
 
 `gate4ai skill > <your skills folder>/gate4ai/SKILL.md`, then run any `gate4ai` command: the first one answers `pairing_required` with a code — show it to the user, they approve it in the Web UI or Telegram. From another OS user or computer: `GATE4AI_URL=https://<id>.relay.gate4.ai`.
+
+## 7. What leaves this computer
+
+Nothing but the relay connection, and only what the tunnel needs:
+
+- **Registration** (`POST relay.gate4.ai/api/devices`, once): the relay generates a random device id and a token; the computer sends nothing about itself — no hostname, user, version or IP in the state beyond what any TCP connection shows.
+- **Certificate** for `<id>.relay.gate4.ai`: issued by Let's Encrypt to this computer (ACME DNS-01; the relay only publishes the TXT record), the private key never leaves it.
+- **Tunnel**: an outgoing WebSocket; incoming TLS is passed through to the computer by SNI, so the relay sees ciphertext only. A hash of the journal checkpoint (no content) is sent as a witness.
+- **No telemetry, no update check, no analytics.** The project counts its users by relay registrations (`gate4ai_relay_devices` on the relay), that is all.
+
+Turn it off at any time: `gate4ai relay off` (the device id is kept, `gate4ai relay on` brings the same address back without a new certificate), the **Settings → Internet access** page, or `GATE4AI_NO_RELAY=1` at install. Without the relay cloud assistants (Claude.ai, ChatGPT) and the phone cannot reach this computer; local agents work as before. The relay is open source (AGPL-3.0, `relay/` in the repository) and can be self-hosted: `gate4ai relay register --url https://relay.example.org`.
