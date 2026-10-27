@@ -20,6 +20,14 @@
 #                                     default the installer checks it and asks first.
 #   $env:GATE4AI_NO_BROWSER = '1'     do not check Chrome now (the browser is built
 #                                     into gate4ai; later: gate4ai browser setup).
+#   $env:GATE4AI_NO_RELAY = '1'       do not turn on access from the internet. By
+#                                     default the daemon registers this computer on
+#                                     relay.gate4.ai and gets https://<id>.relay.gate4.ai:
+#                                     the relay sees only a random device id and
+#                                     encrypted traffic, nothing else leaves the
+#                                     computer. With this variable the daemon starts
+#                                     with internet access off (relay.disabled);
+#                                     later: gate4ai relay on | off.
 #
 # Downloads the release from GitHub, checks sha256 checksums and only then
 # installs. Never touches your configuration or data.
@@ -44,6 +52,7 @@ function Install-Gate4ai {
     $noTray = [bool]$env:GATE4AI_NO_TRAY
     $noStart = [bool]$env:GATE4AI_NO_START
     $noOpen = [bool]$env:GATE4AI_NO_OPEN
+    $noRelay = [bool]$env:GATE4AI_NO_RELAY
 
     $arch = switch ($env:PROCESSOR_ARCHITECTURE) {
         'AMD64' { 'amd64' }
@@ -165,10 +174,23 @@ function Install-Gate4ai {
             Write-Host ''
             $svcArgs = @('service', 'install')
             if ($noTray) { $svcArgs += '--no-tray' }
+            # GATE4AI_NO_RELAY: the daemon starts without the automatic registration on
+            # the relay, then the owner's "off" is written to the configuration
+            # (relay.disabled); gate4ai relay on turns it on later.
+            if ($noRelay) { $svcArgs += @('--', '--relay-auto=false') }
             & $exe @svcArgs | Out-Null
             if ($LASTEXITCODE -eq 0) {
                 $running = $true
                 Write-Host 'The gate4ai daemon is running and starts at every login (gate4ai service status).'
+                if ($noRelay) {
+                    $off = $false
+                    try { & $exe relay off *> $null; $off = ($LASTEXITCODE -eq 0) } catch { $off = $false }
+                    if ($off) {
+                        Write-Host 'Access from the internet is off (GATE4AI_NO_RELAY): this computer is not registered on relay.gate4.ai. Turn it on later: gate4ai relay on'
+                    } else {
+                        Write-Host 'Could not turn access from the internet off (GATE4AI_NO_RELAY); do it yourself: gate4ai relay off'
+                    }
+                }
             } else {
                 Write-Host 'Could not set up the autostart: gate4ai ui starts the daemon for this session.'
             }

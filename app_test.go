@@ -200,7 +200,9 @@ func TestInstallPageNextStep(t *testing.T) {
 		r := get(a, path)
 		wants = append(wants, `id="next"`, `data-copy="gate4ai ui"`, "#readme", "GATE4AI_NO_START=1", "GATE4AI_NO_OPEN=1", "GATE4AI_NO_TRAY=1",
 			// Установка агентом: адреса и пароль в stdout, gate4ai ui --print --json, адрес из интернета вместо ssh.
-			"GATE4AI_UI_WAIT=3m", `id="agents"`, "gate4ai ui --print --json", "remote_cert", "From the internet:")
+			"GATE4AI_UI_WAIT=3m", `id="agents"`, "gate4ai ui --print --json", "remote_cert", "From the internet:",
+			// Что видит relay и как выключить: переменная установщика и команда.
+			"GATE4AI_NO_RELAY=1", "gate4ai relay off")
 		for _, want := range wants {
 			if !strings.Contains(r.body, want) {
 				t.Errorf("%s: no %q", path, want)
@@ -250,6 +252,8 @@ func TestScriptsAndLatest(t *testing.T) {
 		"WAYLAND_DISPLAY", "${CI:-}", "Next: gate4ai ui --print   # prints the Web UI address, the password and the address from the internet", "sign in with the password above", `"$gate" ui --print --wait "$ui_wait"`, "daemon restart",
 		// Без автозапуска daemon всё равно поднимается на эту сессию: адрес и пароль печатаются сразу.
 		`"$gate" daemon start`, "GATE4AI_UI_WAIT",
+		// Без relay: daemon стартует без самостоятельной регистрации, затем запрет пишется в конфигурацию.
+		"GATE4AI_NO_RELAY", "-- --relay-auto=false", `"$gate" relay off`, "gate4ai relay on",
 		// Браузер агентов: проверка, установка с согласия (ответ — из терминала), без терминала — сама при root
 		// или sudo без пароля, иначе только команды; отказ от браузера.
 		"GATE4AI_INSTALL_DEPS", "GATE4AI_NO_BROWSER", `browser setup </dev/tty`, "browser setup --dry-run", "sudo -n true", "browser setup --yes"} {
@@ -265,7 +269,9 @@ func TestScriptsAndLatest(t *testing.T) {
 	if r.status != http.StatusOK || r.h.Get("Content-Type") != "text/plain; charset=utf-8" || !strings.Contains(r.body, "# Installing gate4ai for a user") {
 		t.Fatalf("install.md: %d %v", r.status, r.h)
 	}
-	for _, want := range []string{"Web UI: http://127.0.0.1:7431/", "From the internet:", "gate4ai ui --print --json", "To run Chrome, install:", "gh attestation verify", "cosign verify-blob", "ghcr.io/gate4ai/gate4ai", "GATE4AI_UI_WAIT", "do not suggest an ssh tunnel"} {
+	for _, want := range []string{"Web UI: http://127.0.0.1:7431/", "From the internet:", "gate4ai ui --print --json", "To run Chrome, install:", "gh attestation verify", "cosign verify-blob", "ghcr.io/gate4ai/gate4ai", "GATE4AI_UI_WAIT", "do not suggest an ssh tunnel",
+		// Адрес из интернета — не утечка: что видит relay, как выключить, чем считаются пользователи.
+		"## 7. What leaves this computer", "GATE4AI_NO_RELAY=1", "gate4ai relay off", "random device id", "No telemetry"} {
 		if !strings.Contains(r.body, want) {
 			t.Errorf("install.md: no %q", want)
 		}
@@ -281,7 +287,8 @@ func TestScriptsAndLatest(t *testing.T) {
 		t.Error("install.ps1")
 	}
 	for _, want := range []string{"GATE4AI_NO_START", "GATE4AI_NO_OPEN", "service", "& $exe ui",
-		"$env:CI", "Next: gate4ai ui   # prints the Web UI address and password", "sign in with the password above", "& $exe ui --print", "GATE4AI_INSTALL_DEPS", "GATE4AI_NO_BROWSER", "'browser', 'setup'"} {
+		"$env:CI", "Next: gate4ai ui   # prints the Web UI address and password", "sign in with the password above", "& $exe ui --print", "GATE4AI_INSTALL_DEPS", "GATE4AI_NO_BROWSER", "'browser', 'setup'",
+		"GATE4AI_NO_RELAY", "'--relay-auto=false'", "& $exe relay off"} {
 		if !strings.Contains(r.body, want) {
 			t.Errorf("install.ps1: no %q", want)
 		}
