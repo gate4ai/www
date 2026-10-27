@@ -29,8 +29,9 @@
 #                             by itself when it is root or sudo works without a
 #                             password (sudo -n); without root it downloads Chrome
 #                             for Testing into gate4ai's data folder (gate4ai
-#                             browser setup --user) and prints the packages that
-#                             still need root.
+#                             browser setup --user; on Debian / Ubuntu its
+#                             libraries and fonts go there too) and prints the
+#                             packages that still need root.
 #   GATE4AI_NO_BROWSER=1      do not check Chrome now (the browser is built into
 #                             gate4ai; check later with gate4ai browser setup).
 #   GATE4AI_NO_RELAY=1        do not turn on access from the internet. By default
@@ -271,7 +272,8 @@ main() {
       GATE4AI_OUTPUT=table "$gate" browser setup </dev/tty || browser_ok=""
     else
       # No terminal: root (or sudo -n) installs the packages; without root Chrome for
-      # Testing goes into gate4ai's data folder and the packages it still needs are
+      # Testing goes into gate4ai's data folder, on Debian / Ubuntu its libraries and
+      # fonts too (apt-get download), elsewhere the packages it still needs are
       # printed for root (gate4ai browser setup --dry-run — only the check).
       GATE4AI_OUTPUT=table "$gate" browser setup --yes || browser_ok=""
       [ -n "$browser_ok" ] || { [ "$(id -u)" = 0 ] || sudo -n true 2>/dev/null || say "No terminal to ask and no root: run the commands above as root (or with sudo), then gate4ai browser setup to check."; }
