@@ -48,13 +48,13 @@ Pass the three lines to the user in the chat. The internet address opens from th
 The same data any time, as text or JSON:
 
 ```sh
-gate4ai ui --print            # the three lines (owner command)
+gate4ai ui --print            # the three lines (answers you as well as the owner)
 gate4ai ui --print --json     # url, password, remote_url, remote_cert (ok | temporary), remote_phase, remote_error
 gate4ai browser setup --dry-run --json   # chrome, missing_libraries, needs (packages, command), summary, needs_root
 gate4ai doctor
 ```
 
-If `gate4ai ui` answers `agent_required` (exit 7), gate4ai recognised you as an agent on the owner's socket: give the user the command to run instead of looking for another way.
+`gate4ai ui --print` is the one owner command that answers you too: gate4ai recognises you as an agent on the owner's socket and treats the password as passed through a chat. The password is shown until someone signs in with it; if the daemon was restarted before that, `gate4ai ui --print` generates a new one (the previous one stops working). Everything else (`gate4ai ui --reset-password`, owner commands) answers `agent_required` (exit 7): give the user the command from `hint` instead of looking for another way.
 
 ## 5. Container image
 
