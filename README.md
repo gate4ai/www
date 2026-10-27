@@ -2,7 +2,7 @@
 
 Сайт https://gate4.ai: продающий лендинг (en, ru), установщики `install.sh` / `install.ps1`, каталог коннекторов из подписанного [registry](https://github.com/gate4ai/registry). Требования — [REQUIREMENTS.md](REQUIREMENTS.md).
 
-Один бинарник на Go (стандартная библиотека, шаблоны `html/template`): HTML, CSS, JS и скрипты установки встроены в него через `embed`. Формат индекса registry и проверка его подписи — пакет [`sdk-go/registry`](https://github.com/gate4ai/gate4ai/tree/main/sdk-go/registry) модуля `github.com/gate4ai/gate4ai` (обновляется на каждый релиз gate4ai: `dev/scripts/deploy.sh gate4ai-bump`), те же правила, что у `gate4ai registry check`. Страницы рендерятся на сервере и работают без JavaScript; JS (2 КБ) — только «скопировать», вкладки ОС и фильтр каталога. Без трекеров, cookies, сторонних скриптов и шрифтов.
+Один бинарник на Go (стандартная библиотека, шаблоны `html/template`): HTML, CSS, JS и скрипты установки встроены в него через `embed`. Формат индекса registry и проверка его подписи — пакет [`sdk-go/registry`](https://github.com/gate4ai/gate4ai/tree/main/sdk-go/registry) модуля `github.com/gate4ai/gate4ai` (обновляется на каждый релиз gate4ai: `dev/scripts/deploy.sh gate4ai-bump`), те же правила, что у `gate4ai registry check`. Страницы рендерятся на сервере и работают без JavaScript; JS (2 КБ) — только «скопировать», вкладки ОС и фильтр каталога. Без трекеров, cookies, сторонних скриптов и шрифтов в браузере; посещаемость сайт считает сам и шлёт в Google Analytics 4 с сервера (`analytics.go`, см. «Конфигурация»).
 
 Сайт слушает только HTTP (`127.0.0.1:8080`); TLS и сертификаты — у Caddy за relay (см. «Деплой»).
 
@@ -17,6 +17,7 @@ gofmt -l . && go vet ./... && go test ./...
 |---|---|
 | `main.go` | конфигурация из окружения, HTTP-сервер |
 | `app.go` | маршруты, заголовки безопасности, редирект на канонический хост, шаблоны |
+| `analytics.go` | посещаемость: просмотры страниц и загрузки установщиков → GA4 Measurement Protocol с сервера, очередь в памяти; `DNT`/`Sec-GPC` и боты не считаются |
 | `catalog.go` | карточки каталога; встроенные Браузер и Файлы (`Builtins`, на обоих языках — в магазине их нет); возможности человеческим языком, сгруппированные (каждая — один раз) |
 | `sources.go` | индекс registry (5 мин и webhook) и `/latest` (10 мин и по запросу — не чаще раза в минуту, условным запросом с ETag) из GitHub — только в памяти; при ошибке остаётся последнее проверенное |
 | `i18n.go` | языки, тексты общих страниц, ОС по User-Agent |
@@ -36,6 +37,8 @@ gofmt -l . && go vet ./... && go test ./...
 | `GATE4AI_WWW_WEBHOOK_SECRET` | — | включает `POST /hooks/registry` с `Authorization: Bearer <секрет>` |
 | `GATE4AI_WWW_REGISTRY_URL`, `GATE4AI_WWW_REGISTRY_KEYS` | registry gate4ai и его ключ | источник каталога |
 | `GATE4AI_WWW_RELEASES_REPO` | `gate4ai/gate4ai` | откуда брать `/latest` |
+| `GATE4AI_WWW_GA_ID`, `GATE4AI_WWW_GA_SECRET` | — | поток GA4 (`G-…`) и его секрет Measurement Protocol (Admin → Data Streams → поток → Measurement Protocol API secrets); обе — включают учёт посещаемости с сервера: `page_view` для HTML-страниц, `install_script` для `/install.sh`, `/install.ps1`, `/install.md` и `/install` с `Accept: text/plain`. В GA уходят путь, внешний реферер, IP и User-Agent посетителя, язык; `client_id` — хэш IP и User-Agent с солью из секрета (постоянный, пока те же адрес и браузер). Без переменных — ничего не отправляется |
+| `GATE4AI_WWW_GA_ENDPOINT`, `GATE4AI_WWW_SITE` | `https://www.google-analytics.com/mp/collect`, `https://gate4.ai` | куда слать события и адрес сайта для `page_location` (для тестов) |
 
 Каталога состояния нет: индекс и версия живут в памяти и после перезапуска загружаются заново (до загрузки `/connectors` пишет, что каталог загружается, `/latest` отвечает 503).
 
@@ -46,7 +49,7 @@ gofmt -l . && go vet ./... && go test ./...
 - `ci.yml`: `gofmt`, `go vet`, `go test`, сборка, бюджет страницы < 100 КБ, `shellcheck`, `PSScriptAnalyzer`; на `main` — образ `ghcr.io/gate4ai/www:<sha>` и деплой.
 - `install.yml` (при изменениях в `install/`): настоящая установка последнего релиза на Linux amd64, macOS arm64, Windows (PowerShell 5.1 и 7), откат на GitHub API, повторный запуск, отказ ставить подменённый архив.
 
-Деплой — на сервер relay (`root@136.148.221.24`), Compose-проект `gate4ai-www` в `/opt/gate4ai-www` с сетью хоста, как стек наблюдаемости ([relay/docs/observability.md](https://github.com/gate4ai/gate4ai/blob/main/relay/docs/observability.md#сайт-gate4ai)). CI копирует [deploy/compose.yaml](deploy/compose.yaml), входит в ghcr.io токеном задачи и запускает на сервере [deploy/deploy.sh](deploy/deploy.sh) `up <sha>`: сначала `docker compose pull` нового образа (сбой — `.env` не меняется), затем тег пишется в `.env` (`WWW_TAG`), прежний — в `.env.prev`, и `docker compose up -d`. Если `http://127.0.0.1:8080/healthz` на сервере или затем `https://gate4.ai/healthz` не отвечает, возвращается прежний тег (`deploy.sh rollback`). Секрет webhook — в `/opt/gate4ai-www/www.env` (`GATE4AI_WWW_WEBHOOK_SECRET=…`), CI его не трогает.
+Деплой — на сервер relay (`root@136.148.221.24`), Compose-проект `gate4ai-www` в `/opt/gate4ai-www` с сетью хоста, как стек наблюдаемости ([relay/docs/observability.md](https://github.com/gate4ai/gate4ai/blob/main/relay/docs/observability.md#сайт-gate4ai)). CI копирует [deploy/compose.yaml](deploy/compose.yaml), входит в ghcr.io токеном задачи и запускает на сервере [deploy/deploy.sh](deploy/deploy.sh) `up <sha>`: сначала `docker compose pull` нового образа (сбой — `.env` не меняется), затем тег пишется в `.env` (`WWW_TAG`), прежний — в `.env.prev`, и `docker compose up -d`. Если `http://127.0.0.1:8080/healthz` на сервере или затем `https://gate4.ai/healthz` не отвечает, возвращается прежний тег (`deploy.sh rollback`). Секрет webhook и ключи GA — в `/opt/gate4ai-www/www.env` (`GATE4AI_WWW_WEBHOOK_SECRET=…`, `GATE4AI_WWW_GA_ID=…`, `GATE4AI_WWW_GA_SECRET=…`), CI его не трогает; после правки `www.env` — `docker compose up -d` в `/opt/gate4ai-www`.
 
 Снаружи: relay пробрасывает `gate4.ai` и `www.gate4.ai` по SNI без расшифровки на Caddy (`--route gate4.ai=127.0.0.1:8444 --route www.gate4.ai=127.0.0.1:8444`), Caddy получает сертификаты Let's Encrypt (TLS-ALPN-01), сжимает ответы и проксирует на `127.0.0.1:8080`; `www.gate4.ai` сайт перенаправляет на `gate4.ai`.
 

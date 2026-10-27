@@ -2,7 +2,8 @@
 # Сеть хоста, как у стека наблюдаемости: сайт слушает только 127.0.0.1:8080,
 # снаружи до него доходят через relay (--route gate4.ai, www.gate4.ai → Caddy
 # 127.0.0.1:8444, TLS) → reverse_proxy сюда. Тег образа — WWW_TAG в .env
-# (его пишет deploy.sh из CI); секрет webhook — в www.env (не в репозитории).
+# (его пишет deploy.sh из CI); секрет webhook и ключи Google Analytics
+# (GATE4AI_WWW_GA_ID, GATE4AI_WWW_GA_SECRET) — в www.env (не в репозитории).
 name: gate4ai-www
 
 services:
