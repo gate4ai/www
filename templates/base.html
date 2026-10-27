@@ -10,6 +10,17 @@
 <meta property="og:description" content="{{.Page.Description}}">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://gate4.ai{{.Page.P}}{{.Page.Path}}">
+<meta property="og:site_name" content="gate4.ai">
+<meta property="og:locale" content="{{.Page.Lang.Locale}}">
+<meta property="og:locale:alternate" content="{{.Page.OtherLangLocale}}">
+<meta property="og:image" content="https://gate4.ai/static/og-{{.Page.Lang.Code}}.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="{{.Page.T.OgImageAlt}}">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{.Page.Title}}">
+<meta name="twitter:description" content="{{.Page.Description}}">
+<meta name="twitter:image" content="https://gate4.ai/static/og-{{.Page.Lang.Code}}.png">
 <link rel="canonical" href="https://gate4.ai{{if eq .Page.Path "/"}}{{.Page.P}}/{{else}}{{.Page.P}}{{.Page.Path}}{{end}}">
 <link rel="alternate" hreflang="en" href="https://gate4.ai{{.Page.Path}}">
 <link rel="alternate" hreflang="ru" href="https://gate4.ai/ru{{.Page.Path}}">

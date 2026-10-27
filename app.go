@@ -34,6 +34,10 @@ var (
 	siteJS string
 	//go:embed static/favicon.svg
 	favicon string
+	//go:embed static/og-en.png
+	ogImageEn string
+	//go:embed static/og-ru.png
+	ogImageRu string
 	//go:embed templates
 	templatesFS embed.FS
 )
@@ -120,6 +124,13 @@ func (p Page) OtherLangCode() string {
 	return "ru"
 }
 
+func (p Page) OtherLangLocale() string {
+	if p.Lang == Ru {
+		return En.Locale()
+	}
+	return Ru.Locale()
+}
+
 // Handler — все маршруты с заголовками безопасности и каноническим хостом.
 func (a *App) Handler() http.Handler {
 	mux := http.NewServeMux()
@@ -153,6 +164,9 @@ func (a *App) Handler() http.Handler {
 	mux.HandleFunc("GET /static/site.css", asset(siteCSS, "text/css; charset=utf-8"))
 	mux.HandleFunc("GET /static/site.js", asset(siteJS, "text/javascript; charset=utf-8"))
 	mux.HandleFunc("GET /favicon.svg", asset(favicon, "image/svg+xml"))
+	// Картинки превью ссылок (og:image) для Telegram и соцсетей: static/og/render.sh.
+	mux.HandleFunc("GET /static/og-en.png", asset(ogImageEn, "image/png"))
+	mux.HandleFunc("GET /static/og-ru.png", asset(ogImageRu, "image/png"))
 	mux.HandleFunc("GET /robots.txt", func(w http.ResponseWriter, r *http.Request) {
 		text(w, http.StatusOK, "User-agent: *\nAllow: /\nSitemap: https://gate4.ai/sitemap.xml\n")
 	})
